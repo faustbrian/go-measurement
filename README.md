@@ -12,7 +12,7 @@
 
 `measurement` is an immutable, exact, unit-safe measurement package for
 Track, Postal, Location, and logistics services. It uses
-[`math`](../math) decimals exclusively and never requires binary
+[`math`](https://github.com/faustbrian/go-math) decimals exclusively and never requires binary
 floating-point conversion.
 
 ```go
