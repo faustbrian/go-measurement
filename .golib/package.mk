@@ -32,7 +32,7 @@ fuzz:
 	./scripts/check-fuzz.sh "$(FUZZ_TIME)"
 
 mutation:
-	$$(git rev-parse --show-toplevel)/scripts/check-mutation.sh .
+	$$(git rev-parse --show-toplevel)/.golib/scripts/check-mutation.sh .
 
 benchmark:
 	$(GO) test ./... -run '^$$' -bench Benchmark -benchmem \

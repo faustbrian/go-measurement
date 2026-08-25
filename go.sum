@@ -4,7 +4,7 @@ github.com/cockroachdb/apd/v3 v3.2.3 h1:4Zx+I3R35bFXMnltzmjP79i2cravE4jTRL6ps9Au
 github.com/cockroachdb/apd/v3 v3.2.3/go.mod h1:klXJcjp+FffLTHlhIG69tezTDvdP065naDsHzKhYSqc=
 github.com/faustbrian/go-math v1.0.0 h1:tf4813GeJGWQ0J3SbDzdVx9rqoZ2r543KfRDkgvHlxk=
 github.com/faustbrian/go-math v1.0.0/go.mod h1:ng3bXTchmlJz/xcXY87ZHFDdd3WUrDhPUaFEytofbBg=
-github.com/faustbrian/go-wire v1.0.0 h1:OSSvxeO8NIAHpf8P4T5H4nTR7Qjg76yw7wXqXogoc7Y=
+github.com/faustbrian/go-wire v1.0.0 h1:r+EvNHh5YSpxTYfUfHi0JaxdwQ7aZPeTmp+iTkwplF0=
 github.com/faustbrian/go-wire v1.0.0/go.mod h1:wcQnBeNpF6pw7vFhnBd0W9+qS7zlATxn2zuUae8aLyU=
 github.com/fxamacker/cbor/v2 v2.9.2 h1:X4Ksno9+x3cz0TZv69ec1hxP/+tymuR8PXQJyDwfh78=
 github.com/fxamacker/cbor/v2 v2.9.2/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
