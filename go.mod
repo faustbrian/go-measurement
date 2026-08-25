@@ -1,8 +1,8 @@
-module github.com/faustbrian/golib/pkg/measurement
+module github.com/faustbrian/go-measurement
 
 go 1.26.6
 
 require (
-	github.com/faustbrian/golib/pkg/math v0.0.0
-	github.com/faustbrian/golib/pkg/wire v0.0.0
+	github.com/faustbrian/go-math v1.0.0
+	github.com/faustbrian/go-wire v1.0.0
 )

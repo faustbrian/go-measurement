@@ -1,10 +1,10 @@
-PACKAGE github.com/faustbrian/golib/pkg/measurement
-package measurement // import "github.com/faustbrian/golib/pkg/measurement"
+PACKAGE github.com/faustbrian/go-measurement
+package measurement // import "github.com/faustbrian/go-measurement"
 
 Package measurement provides immutable exact logistics quantities with explicit
 units, dimensions, conversion policy, and arithmetic bounds.
 
-Decimal arithmetic is owned by github.com/faustbrian/golib/pkg/math/decimal.
+Decimal arithmetic is owned by github.com/faustbrian/go-math/decimal.
 Core quantities never convert through float32 or float64. Conversions either
 require an exact terminating result or an explicit scale and rounding mode.
 Loading metres remain semantically distinct from ordinary lengths.
@@ -347,8 +347,8 @@ func (i VolumetricIndex) Density() Quantity
 func (i VolumetricIndex) Weight(volume Quantity, context ConversionContext) (Quantity, error)
     Weight multiplies the index by a volume and returns canonical kilograms.
 
-PACKAGE github.com/faustbrian/golib/pkg/measurement/measurementwire
-package measurementwire // import "github.com/faustbrian/golib/pkg/measurement/measurementwire"
+PACKAGE github.com/faustbrian/go-measurement/measurementwire
+package measurementwire // import "github.com/faustbrian/go-measurement/measurementwire"
 
 Package measurementwire adapts Quantity to bounded wire JSON and XML codecs
 while preserving decimal and unit metadata.

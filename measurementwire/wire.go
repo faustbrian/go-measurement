@@ -6,10 +6,10 @@ import (
 	"encoding/xml"
 	"fmt"
 
-	measurement "github.com/faustbrian/golib/pkg/measurement"
-	"github.com/faustbrian/golib/pkg/wire"
-	"github.com/faustbrian/golib/pkg/wire/jsonwire"
-	"github.com/faustbrian/golib/pkg/wire/xmlwire"
+	measurement "github.com/faustbrian/go-measurement"
+	"github.com/faustbrian/go-wire"
+	"github.com/faustbrian/go-wire/jsonwire"
+	"github.com/faustbrian/go-wire/xmlwire"
 )
 
 // Options bounds encoded and decoded documents.

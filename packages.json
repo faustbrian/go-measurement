@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-measurement",
+  "packages": [
+    {
+      "module_directory": ".",
+      "directory": ".",
+      "name": "measurement",
+      "import_path": "github.com/faustbrian/go-measurement",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "measurementwire",
+      "name": "measurementwire",
+      "import_path": "github.com/faustbrian/go-measurement/measurementwire",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    }
+  ]
+}

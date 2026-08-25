@@ -5,7 +5,7 @@ import (
 	"encoding/xml"
 	"testing"
 
-	measurement "github.com/faustbrian/golib/pkg/measurement"
+	measurement "github.com/faustbrian/go-measurement"
 )
 
 func FuzzParseAndTextRoundTrip(f *testing.F) {

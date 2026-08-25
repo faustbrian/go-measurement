@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/faustbrian/golib/pkg/math/decimal"
+	"github.com/faustbrian/go-math/decimal"
 )
 
 // Package errors classify validation, unit, dimension, and context failures.

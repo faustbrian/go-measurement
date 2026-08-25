@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/faustbrian/golib/pkg/math/decimal"
+	"github.com/faustbrian/go-math/decimal"
 )
 
 // MaxSerializedBytes bounds direct JSON and SQL decoding. Use measurementwire

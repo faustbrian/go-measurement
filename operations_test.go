@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
-	"github.com/faustbrian/golib/pkg/math/decimal"
-	measurement "github.com/faustbrian/golib/pkg/measurement"
+	gomath "github.com/faustbrian/go-math"
+	"github.com/faustbrian/go-math/decimal"
+	measurement "github.com/faustbrian/go-measurement"
 )
 
 func TestOfficialExactUnitDefinitions(t *testing.T) {

@@ -1,9 +1,11 @@
 # Changelog
 
 All notable changes follow Keep a Changelog. The project uses semantic
-versioning after the first stable release.
+versioning.
 
 ## Unreleased
+
+## 1.0.0 - 2026-08-25
 
 ### Documentation
 
@@ -11,6 +13,7 @@ versioning after the first stable release.
 
 ### Changed
 
+- Publish the module from its standalone `github.com/faustbrian/go-measurement` identity while preserving its documented API and behavior.
 - Strengthen exact-limit mutation coverage and simplify equivalent boundary
   expressions without changing the accepted measurement domain.
 - Delegate local mutation checks to the canonical exact-100 repository runner

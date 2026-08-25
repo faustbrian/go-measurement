@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/math/decimal"
-	measurement "github.com/faustbrian/golib/pkg/measurement"
+	"github.com/faustbrian/go-math/decimal"
+	measurement "github.com/faustbrian/go-measurement"
 )
 
 func TestQuantityJSONPreservesDecimalAndUnitMetadata(t *testing.T) {

@@ -1,0 +1,67 @@
+{
+  "schema_version": 3,
+  "reason": "Exact mutation checkpoints retained across history rewrites only when the approved old and replacement package input fingerprints, tool version, and report digest match.",
+  "verifier_migration_review": {
+    "gremlins_verifier_sha256": "9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+    "reason": "Each listed checkpoint was executed with the complete current Gremlins semantic patch set introduced by ac300cf3; the four omitted checkpoints require fresh campaigns.",
+    "reviewed_at": "2026-08-20"
+  },
+  "verifier_migrations": [
+    {
+      "execution_revision": "c09c5268b1facb88317f933913b2e7cf4377948b",
+      "gate_input_digest": "dd28ef796b2e1bdc46b84be61ba89e2b61117b76146302d27c0c2232776dc07d",
+      "gremlins_verifier_sha256": "9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+      "gremlins_version": "v0.6.0",
+      "module": ".",
+      "package": ".",
+      "report_sha256": "0f92aac6783a0ad570c0a4af908b04aa382571960a04976bff680090a215b226"
+    },
+    {
+      "execution_revision": "c09c5268b1facb88317f933913b2e7cf4377948b",
+      "gate_input_digest": "63984085fc4804dd7ebdacb6a18110d12d25abffb5cae0f0f699c86005f8b6c0",
+      "gremlins_verifier_sha256": "9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+      "gremlins_version": "v0.6.0",
+      "module": ".",
+      "package": "measurementwire",
+      "report_sha256": "3f709de8a1b27a5e66588dabf89ea5a5c9456bc02d885739924af717f2d9769b"
+    }
+  ],
+  "entries": [
+    {
+      "execution_revision": "8981d527a6e9d753a38ee33888c50a8a96bdc45f",
+      "gate_input_digest": "a067397162fa81b25c615c11a40aff20407859b53ed09c4a0529a47a8df62f2c",
+      "gremlins_version": "v0.6.0",
+      "module": ".",
+      "package": ".",
+      "report_sha256": "6ad51ffff579ae87c8b5fd66c7903065622df967a70288d824a1884a0ef235cb"
+    },
+    {
+      "execution_revision": "8981d527a6e9d753a38ee33888c50a8a96bdc45f",
+      "gate_input_digest": "81fcc7fecdc71de7e3acb5f816d4c35e98c53a4d64c22faeae1762ec4d858311",
+      "gremlins_version": "v0.6.0",
+      "module": ".",
+      "package": "measurementwire",
+      "report_sha256": "5016af6aa4e97488a2a4f0377876f099dda1ba53635f2a2c55a4fae5aeb3f958"
+    },
+    {
+      "module": ".",
+      "package": ".",
+      "execution_revision": "c09c5268b1facb88317f933913b2e7cf4377948b",
+      "gate_input_digest": "dd28ef796b2e1bdc46b84be61ba89e2b61117b76146302d27c0c2232776dc07d",
+      "replacement_gate_input_digest": "c39d88b67e03776b36f5f3e5e28211cdccf52c65f1387ff221bd643c1f9daa03",
+      "gremlins_version": "v0.6.0",
+      "gremlins_verifier_sha256": "9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+      "report_sha256": "0f92aac6783a0ad570c0a4af908b04aa382571960a04976bff680090a215b226"
+    },
+    {
+      "module": ".",
+      "package": "measurementwire",
+      "execution_revision": "c09c5268b1facb88317f933913b2e7cf4377948b",
+      "gate_input_digest": "63984085fc4804dd7ebdacb6a18110d12d25abffb5cae0f0f699c86005f8b6c0",
+      "replacement_gate_input_digest": "bd90a359bb6846720e66e9db60220a509e481044ef90386fc88496cadc7d79ac",
+      "gremlins_version": "v0.6.0",
+      "gremlins_verifier_sha256": "9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+      "report_sha256": "3f709de8a1b27a5e66588dabf89ea5a5c9456bc02d885739924af717f2d9769b"
+    }
+  ]
+}

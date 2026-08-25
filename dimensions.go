@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/faustbrian/golib/pkg/math/decimal"
+	"github.com/faustbrian/go-math/decimal"
 )
 
 // MaxPackageQuantity bounds shipment formula work and integer conversion.
