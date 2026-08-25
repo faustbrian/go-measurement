@@ -2,9 +2,9 @@ github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/cockroachdb/apd/v3 v3.2.3 h1:4Zx+I3R35bFXMnltzmjP79i2cravE4jTRL6ps9Aux80=
 github.com/cockroachdb/apd/v3 v3.2.3/go.mod h1:klXJcjp+FffLTHlhIG69tezTDvdP065naDsHzKhYSqc=
-github.com/faustbrian/go-math v1.0.0 h1:UsutL/IZJ0wzrditiRTnOjWkpVZos2jb6tQlg6cDg8s=
+github.com/faustbrian/go-math v1.0.0 h1:DggUb3xQ/FHaEbtPOoWXu81TGnmwoiuYiWOc+la5vF8=
 github.com/faustbrian/go-math v1.0.0/go.mod h1:ng3bXTchmlJz/xcXY87ZHFDdd3WUrDhPUaFEytofbBg=
-github.com/faustbrian/go-wire v1.0.0 h1:7PMKO5niXETf4ZcQ0WGgMqCtEar4uGnHA1I7O9TGPSU=
+github.com/faustbrian/go-wire v1.0.0 h1:84/tg0D0Mt1zinBQjyJdvTzUI9LaKvjE9rbLbWENtaY=
 github.com/faustbrian/go-wire v1.0.0/go.mod h1:wcQnBeNpF6pw7vFhnBd0W9+qS7zlATxn2zuUae8aLyU=
 github.com/fxamacker/cbor/v2 v2.9.2 h1:X4Ksno9+x3cz0TZv69ec1hxP/+tymuR8PXQJyDwfh78=
 github.com/fxamacker/cbor/v2 v2.9.2/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
