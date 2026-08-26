@@ -5,6 +5,16 @@ versioning.
 
 ## Unreleased
 
+### Changed
+
+- Align isolated dependency checks and architecture guards with standalone
+  package module paths.
+
+### Documentation
+
+- Replace the archived monorepo portal and repeated README links with the
+  repository-local documentation index.
+
 ## 1.0.0 - 2026-08-25
 
 ### Changed
@@ -31,7 +41,7 @@ versioning.
 
 ### Documentation
 
-- Link the package README to the repository-wide Golib documentation portal.
+- Add package discovery documentation.
 
 ### Changed
 
