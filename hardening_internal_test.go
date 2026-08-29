@@ -362,6 +362,16 @@ func TestInternalDimensionTripleFailurePaths(t *testing.T) {
 	_ = index.Density()
 }
 
+func TestDecodeJSONObjectRejectsUnexpectedEOF(t *testing.T) {
+	t.Parallel()
+
+	var encoded encodedQuantity
+	err := decodeJSONObject([]byte(`{]`), map[string]struct{}{"value": {}, "unit": {}}, &encoded)
+	if !errors.Is(err, ErrInvalidQuantity) {
+		t.Fatalf("decodeJSONObject(truncated) error = %v, want ErrInvalidQuantity", err)
+	}
+}
+
 func TestInternalEncodingFailurePaths(t *testing.T) {
 	t.Parallel()
 

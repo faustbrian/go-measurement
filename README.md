@@ -37,24 +37,8 @@ caller-selected `Profile`; no locale or preferred unit is inferred.
 
 ## Documentation
 
-- [Quickstart](docs/quickstart.md)
-- [API and supported units](docs/api.md)
-- [Exactness and rounding](docs/exactness.md)
-- [Standards and formula sources](docs/sources.md)
-- [Dimensional analysis](docs/dimensional-analysis.md)
-- [Logistics formulas](docs/logistics-formulas.md)
-- [Serialization and adapters](docs/serialization.md)
-- [Cookbook](docs/cookbook.md)
-- [Migration from shipit/measurements](docs/migration.md)
-- [Security](docs/security.md)
-- [Performance](docs/performance.md)
-- [Compatibility](docs/compatibility.md)
-- [FAQ](docs/faq.md)
+Use the [documentation index](docs/README.md) for adoption, numeric contracts,
+supported units, logistics formulas, serialization, and operations guidance.
 
 Run `make check` for all blocking local gates. See [CONTRIBUTING.md](CONTRIBUTING.md)
 and [CHANGELOG.md](CHANGELOG.md).
-
-## Ecosystem
-
-Use the [Golib documentation portal](https://github.com/faustbrian/golib/blob/main/docs/index.md)
-to choose companion packages, supported stacks, recipes, and operations guidance.

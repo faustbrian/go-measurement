@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-measurement",
+  "module": ".",
+  "package": "measurementwire",
+  "gate": "mutation",
+  "input_digest": "sha256:b4f73de669d13fac3d64ae98adb8bce220f4d66326667a9a21c68d9103ac0ab8",
+  "verifier_digest": "sha256:9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+  "result": "passed",
+  "report_digest": "sha256:1c43b0b0608119093022714cf70d14d0c3963ada3d705d764a7716716cc18910",
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "GOVERSION": "go1.27.0",
+    "gremlins_binary_sha256": "sha256:6a2beddc477eb410f8a670b6c9049558563d3c4327498fe31604d31c773a959e"
+  },
+  "completed_at": "2026-08-29T05:51:39.742716Z"
+}

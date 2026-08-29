@@ -15,7 +15,7 @@ for file in "${required[@]}"; do
 		exit 1
 	fi
 done
-if rg -n 'TODO|TBD|FIXME' README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md docs; then
+if grep -REn 'TODO|TBD|FIXME' README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md docs; then
 	printf 'unfinished documentation marker found\n' >&2
 	exit 1
 fi
