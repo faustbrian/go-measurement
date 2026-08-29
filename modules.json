@@ -33,7 +33,7 @@
           "build_tags": []
         }
       ],
-      "purpose": "`measurement` is an immutable, exact, unit-safe measurement package for Track, Postal, Location, and logistics services. It uses [`math`](../math) decimals exclusively and never requires binary floating-point conversion.",
+      "purpose": "`measurement` is an immutable, exact, unit-safe measurement package for Track, Postal, Location, and logistics services. It uses github.com/faustbrian/go-math/decimal exclusively and never requires binary floating-point conversion.",
       "lifecycle": "stable",
       "kind": "public library",
       "releasable": true,

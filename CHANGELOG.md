@@ -9,11 +9,12 @@ versioning.
 
 - Align isolated dependency checks and architecture guards with standalone
   package module paths.
+- Adopt the released `go-library-tools` v1.0.5 contract while retaining the
+  measurement-specific architecture, security, and documentation checks.
 
 ### Documentation
 
-- Replace the archived monorepo portal and repeated README links with the
-  repository-local documentation index.
+- Replace repeated README links with the repository-local documentation index.
 
 ## 1.0.0 - 2026-08-25
 
