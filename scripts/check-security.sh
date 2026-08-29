@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if grep -REn --include='*.go' --exclude='*_test.go' \
-	'go:linkname|import "C"|(^|[^[:alnum:]_])unsafe([^[:alnum:]_]|$)' .; then
+if find . -type f -name '*.go' ! -path './.git/*' ! -path './.golib-tooling/*' \
+	! -path './.verification/*' ! -name '*_test.go' -exec grep -En \
+	'go:linkname|import "C"|(^|[^[:alnum:]_])unsafe([^[:alnum:]_]|$)' {} +; then
 	printf 'forbidden unsafe or cgo mechanism found\n' >&2
 	exit 1
 fi
