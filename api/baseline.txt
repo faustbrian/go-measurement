@@ -1,4 +1,3 @@
-PACKAGE github.com/faustbrian/go-measurement
 package measurement // import "github.com/faustbrian/go-measurement"
 
 Package measurement provides immutable exact logistics quantities with explicit
@@ -347,7 +346,6 @@ func (i VolumetricIndex) Density() Quantity
 func (i VolumetricIndex) Weight(volume Quantity, context ConversionContext) (Quantity, error)
     Weight multiplies the index by a volume and returns canonical kilograms.
 
-PACKAGE github.com/faustbrian/go-measurement/measurementwire
 package measurementwire // import "github.com/faustbrian/go-measurement/measurementwire"
 
 Package measurementwire adapts Quantity to bounded wire JSON and XML codecs
