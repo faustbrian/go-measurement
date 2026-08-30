@@ -1,8 +1,8 @@
 # Standards And Formula Sources
 
-The unit catalog was re-audited on 2026-07-20 against these primary sources:
+The unit catalog was re-audited on 2026-08-30 against these primary sources:
 
-- The [BIPM SI Brochure, ninth edition, 2026 update](https://www.bipm.org/en/publications/si-brochure/)
+- The [BIPM SI Brochure, ninth edition, version 4.01 (2026)](https://www.bipm.org/en/publications/si-brochure/)
   defines metre, kilogram, kelvin, coherent derived dimensions, decimal SI
   prefixes, the unit one, and the accepted litre relation. Prefix powers are
   applied to the whole powered unit, so `cm2 = 10^-4 m2` and
@@ -28,6 +28,9 @@ not presented as SI constants or universal carrier rules.
 Every factor has a canonical conversion fixture in `unit_definitions_test.go`.
 Changes to a source version or interpretation require updating this register,
 the fixture, round-trip properties, and the changelog in one review.
+The pinned authority bodies, review date, and decision-to-test bindings live in
+the [specification decision register](specification-decisions.md) and
+[`specification/`](../specification/README.md).
 
 The ASCII wire symbols (`m2`, `m3`, `degC`, and `degF`) are stable API
 identifiers, not typography claims. SI documents normally print superscripts
@@ -49,3 +52,9 @@ universal physical constants:
 `logistics_fixtures_test.go` verifies these raw formulas. Carrier rules that
 round dimensions or final chargeable weight are deliberately outside the raw
 formula types and must be applied explicitly by the caller.
+
+The 2026-08-30 authority review retrieved the DHL, DB Schenker, and DSV sources.
+The FedEx URL returned a service-unavailable page, so its historical example
+remains executable arithmetic evidence but is not claimed as current pinned
+provider agreement. No maintained software unit-library differential is run;
+that lane is explicitly recorded as not assessed.

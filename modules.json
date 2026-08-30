@@ -57,17 +57,28 @@
       "required_services": [],
       "build_tags": [],
       "test_tags": [],
-      "interoperability_tools": [],
-      "specifications": [],
-      "conformance_corpora": [],
-      "provenance": [],
+      "interoperability_tools": [
+        "DHL, DB Schenker, and DSV provider fixtures"
+      ],
+      "specifications": [
+        "BIPM SI Brochure 9th edition version 4.01",
+        "NIST SP 811 2008 edition",
+        "Carrier logistics references snapshot 2026-08-30"
+      ],
+      "conformance_corpora": [
+        "unit_definitions_test.go",
+        "logistics_fixtures_test.go"
+      ],
+      "provenance": [
+        "specification/manifest.tsv"
+      ],
       "goal_files": [],
       "goal_status": "not-applicable",
       "goal_evidence": [],
       "gates": {
         "api_compatibility": true,
         "benchmarks": true,
-        "conformance": false,
+        "conformance": true,
         "coverage": true,
         "documentation": true,
         "fuzz": true,

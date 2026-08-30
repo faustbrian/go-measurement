@@ -39,6 +39,9 @@ caller-selected `Profile`; no locale or preferred unit is inferred.
 
 Use the [documentation index](docs/README.md) for adoption, numeric contracts,
 supported units, logistics formulas, serialization, and operations guidance.
+Specification-backed behavior and its executable evidence are recorded in the
+[specification decision register](docs/specification-decisions.md) and
+[conformance matrix](specification/README.md).
 
 Run `make check` for all blocking local gates. See [CONTRIBUTING.md](CONTRIBUTING.md)
 and [CHANGELOG.md](CHANGELOG.md).

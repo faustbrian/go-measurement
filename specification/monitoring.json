@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-30",
+  "review_interval_days": 90,
+  "authorities": [
+    {
+      "id": "bipm-si-brochure-source",
+      "kind": "specification",
+      "version": "BIPM SI Brochure 9th edition version 4.01 (2026)",
+      "url": "https://www.bipm.org/documents/20126/41483022/SI-Brochure-9.pdf",
+      "sha256": "1122cf38e25b23d780a30607c68f7350b2b6d1f9970a89947aaa87a45ecbb20a",
+      "specifications": ["BIPM SI Brochure 9th edition version 4.01"]
+    },
+    {
+      "id": "bipm-si-brochure-releases",
+      "kind": "releases",
+      "url": "https://www.bipm.org/documents/20126/41483022/SI-Brochure-9.pdf",
+      "sha256": "1122cf38e25b23d780a30607c68f7350b2b6d1f9970a89947aaa87a45ecbb20a",
+      "specifications": ["BIPM SI Brochure 9th edition version 4.01"]
+    },
+    {
+      "id": "nist-sp811-source",
+      "kind": "specification",
+      "version": "NIST SP 811 2008 edition",
+      "url": "https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication811e2008.pdf",
+      "sha256": "788dd8f0bcb0ec06e40c300690266742532a7e760a93be57764b77ed0ef3482f",
+      "specifications": ["NIST SP 811 2008 edition"]
+    },
+    {
+      "id": "nist-sp811-releases",
+      "kind": "releases",
+      "url": "https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication811e2008.pdf",
+      "sha256": "788dd8f0bcb0ec06e40c300690266742532a7e760a93be57764b77ed0ef3482f",
+      "specifications": ["NIST SP 811 2008 edition"]
+    },
+    {
+      "id": "dsv-logistics-source",
+      "kind": "recommendation",
+      "version": "Carrier logistics references snapshot 2026-08-30",
+      "url": "https://www.dsv.com/it-it/sostegno/faq/calcolatore-di-peso-volumetrico",
+      "sha256": "cb48e28b730f5c47b052cccc9e2dec7b894c4107d017a47598ba6a2a3dbadd89",
+      "specifications": ["Carrier logistics references snapshot 2026-08-30"]
+    },
+    {
+      "id": "dbschenker-logistics-source",
+      "kind": "recommendation",
+      "version": "DB Schenker international road terms effective 2026-05-04",
+      "url": "https://www.dbschenker.com/resource/blob/2479672/3b7520da0b6a5db3138cbd14b70f3320/terms-of-provision-of-services-in-international-road-forwarding-from-4-05-2026-data.pdf",
+      "sha256": "1a09ade20d355aac4eac3e5a4b803b765f7e701996f6ae46960ebe2bbfe51a85",
+      "specifications": ["Carrier logistics references snapshot 2026-08-30"]
+    },
+    {
+      "id": "dhl-logistics-source",
+      "kind": "recommendation",
+      "version": "DHL DCT help snapshot 2026-08-30",
+      "url": "https://dct.dhl.com/help",
+      "sha256": "40494a23fed6a47bc8fbdd1b44af965bc2a5dc507cbd25ce00509a8ce69f103c",
+      "specifications": ["Carrier logistics references snapshot 2026-08-30"]
+    },
+    {
+      "id": "carrier-logistics-releases",
+      "kind": "releases",
+      "url": "https://www.dsv.com/it-it/sostegno/faq/calcolatore-di-peso-volumetrico",
+      "sha256": "cb48e28b730f5c47b052cccc9e2dec7b894c4107d017a47598ba6a2a3dbadd89",
+      "specifications": ["Carrier logistics references snapshot 2026-08-30"]
+    }
+  ]
+}

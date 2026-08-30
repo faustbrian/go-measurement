@@ -22,6 +22,22 @@ api:
     - ./measurementwire
 operations:
 - module: .
+  gate: interoperability
+  steps:
+  - type: go-test
+    packages: [.]
+    run: '^Test(DBSchenkerEuroPalletLoadingMetreFixture|CarrierVolumetricWeightFixtures|DSVEuroPalletVolumetricIndexFixture)$'
+    count: 1
+    timeout: 20m
+- module: .
+  gate: conformance
+  steps:
+  - type: go-test
+    packages: [.]
+    run: '^Test(EveryFiniteUnitRatioAgainstCanonicalUnit|OfficialExactUnitDefinitions|EveryUnitHasTheAuditedSymbolAndDimension|FahrenheitUsesExactDefinedRatioBeforeRounding|TemperatureConversionRequiresExplicitRounding|RoundedConversionRoundsOnlyTheFinalRatio|ZeroConversionContextDoesNotInferRoundingPolicy|DerivedDimensionsSelectCanonicalUnits|DerivedDimensionIdentitiesAndCommutativity|DivideMassByVolumeAndMultiplyDensityByVolume|AbsoluteTemperaturesRejectAffineArithmetic|ParsingUsesOnlyExplicitProfileAliases|UnitCatalogIsStableSortedAndAliasSafe|DBSchenkerEuroPalletLoadingMetreFixture|CarrierVolumetricWeightFixtures|DSVEuroPalletVolumetricIndexFixture|DimensionsCalculateLoadingMetresWithStacking|VolumetricDivisorUsesExplicitVolumeUnit)$'
+    count: 1
+    timeout: 20m
+- module: .
   gate: test
   steps:
   - type: make
