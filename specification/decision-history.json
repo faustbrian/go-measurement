@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "MEASUREMENT-DEC-001",
+      "digests": ["de9aa2fd27fcd6f8776bbc9ff08aabe008922542fd298dc9b8e442b51cff71e3"]
+    },
+    {
+      "id": "MEASUREMENT-DEC-002",
+      "digests": ["b404435f23d7772bb49bdf31d5340af3dfbe724d782672ffb4ab5720f0264ecf"]
+    },
+    {
+      "id": "MEASUREMENT-DEC-003",
+      "digests": ["9e91e6be2094c8f5716604c6aaea6db691e31d44257b5742a872bbd304a69aa9"]
+    },
+    {
+      "id": "MEASUREMENT-DEC-004",
+      "digests": ["4c5693dec5e261ac8a39893d0e9c836f157b2635ae7faaef63f392bbb7a7fe52"]
+    },
+    {
+      "id": "MEASUREMENT-DEC-005",
+      "digests": ["9f1530a6409651204e38c81bc9183b40e461e77f83f1753f6b0bc1e346921416"]
+    },
+    {
+      "id": "MEASUREMENT-DEC-006",
+      "digests": ["0f86101b227f12e9982fdcd30dbc96513ff780d4e2afa1bd35f5dfe5b8d3e1e4"]
+    }
+  ]
+}

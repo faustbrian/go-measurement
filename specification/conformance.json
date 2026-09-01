@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "MEASUREMENT-DEC-001",
+      "authoritative_sources": ["bipm-si-brochure-source", "nist-sp811-source"],
+      "executable_evidence": ["TestEveryFiniteUnitRatioAgainstCanonicalUnit", "TestOfficialExactUnitDefinitions", "TestEveryUnitHasTheAuditedSymbolAndDimension"],
+      "fixtures": ["unit_definitions_test.go"],
+      "fuzz": ["FuzzParseAndTextRoundTrip"],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["The finite catalog uses exact decimal SI and international customary ratios and stable canonical units."]
+    },
+    {
+      "id": "MEASUREMENT-DEC-002",
+      "authoritative_sources": ["nist-sp811-source", "bipm-si-brochure-source"],
+      "executable_evidence": ["TestFahrenheitUsesExactDefinedRatioBeforeRounding", "TestOfficialExactUnitDefinitions", "TestTemperatureConversionRequiresExplicitRounding"],
+      "fixtures": ["unit_definitions_test.go"],
+      "fuzz": [],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Celsius and Fahrenheit convert through exact affine definitions before caller-selected final division policy."]
+    },
+    {
+      "id": "MEASUREMENT-DEC-003",
+      "authoritative_sources": ["nist-sp811-source"],
+      "executable_evidence": ["TestRoundedConversionRoundsOnlyTheFinalRatio", "TestTemperatureConversionRequiresExplicitRounding", "TestZeroConversionContextDoesNotInferRoundingPolicy"],
+      "fixtures": [],
+      "fuzz": [],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Conversions either remain exactly terminating or round the complete ratio once under explicit caller policy."]
+    },
+    {
+      "id": "MEASUREMENT-DEC-004",
+      "authoritative_sources": ["bipm-si-brochure-source"],
+      "executable_evidence": ["TestDerivedDimensionsSelectCanonicalUnits", "TestDerivedDimensionIdentitiesAndCommutativity", "TestDivideMassByVolumeAndMultiplyDensityByVolume"],
+      "fixtures": [],
+      "fuzz": [],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Supported dimensional arithmetic returns one canonical unit and rejects results outside the closed dimension model."]
+    },
+    {
+      "id": "MEASUREMENT-DEC-005",
+      "authoritative_sources": ["bipm-si-brochure-source"],
+      "executable_evidence": ["TestAbsoluteTemperaturesRejectAffineArithmetic", "TestParsingUsesOnlyExplicitProfileAliases", "TestUnitCatalogIsStableSortedAndAliasSafe"],
+      "fixtures": [],
+      "fuzz": ["FuzzParseAndTextRoundTrip", "FuzzQuantityJSON"],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Absolute temperatures reject addition and subtraction, and aliases require an explicit bounded caller profile."]
+    },
+    {
+      "id": "MEASUREMENT-DEC-006",
+      "authoritative_sources": ["dsv-logistics-source", "dbschenker-logistics-source", "dhl-logistics-source"],
+      "executable_evidence": ["TestDBSchenkerEuroPalletLoadingMetreFixture", "TestCarrierVolumetricWeightFixtures", "TestDSVEuroPalletVolumetricIndexFixture", "TestDimensionsCalculateLoadingMetresWithStacking", "TestVolumetricDivisorUsesExplicitVolumeUnit"],
+      "fixtures": ["logistics_fixtures_test.go"],
+      "fuzz": [],
+      "interoperability_evidence": ["logistics_fixtures_test.go"],
+      "interoperability_classification": "provider agreement",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Logistics calculations use explicit caller-owned width, stacking, divisor, and density inputs and return unrounded raw formula results."]
+    }
+  ]
+}

@@ -9,12 +9,25 @@ versioning.
 
 - Align isolated dependency checks and architecture guards with standalone
   package module paths.
-- Adopt the released `go-library-tools` v1.0.6 contract while retaining the
+- Adopt the released `go-library-tools` v1.2.0 CLI and immutable merged
+  workflow `1f9629e5f27418600460b55a50a5b2fc81697fab` while retaining the
   measurement-specific architecture, security, and documentation checks.
 
 ### Documentation
 
 - Replace repeated README links with the repository-local documentation index.
+- Add the [specification decision register](docs/specification-decisions.md),
+  conformance matrix, source monitoring, and typed conformance and
+  interoperability gates for the existing measurement contract.
+
+### Specification Decisions
+
+- MEASUREMENT-DEC-001 sha256:de9aa2fd27fcd6f8776bbc9ff08aabe008922542fd298dc9b8e442b51cff71e3
+- MEASUREMENT-DEC-002 sha256:b404435f23d7772bb49bdf31d5340af3dfbe724d782672ffb4ab5720f0264ecf
+- MEASUREMENT-DEC-003 sha256:9e91e6be2094c8f5716604c6aaea6db691e31d44257b5742a872bbd304a69aa9
+- MEASUREMENT-DEC-004 sha256:4c5693dec5e261ac8a39893d0e9c836f157b2635ae7faaef63f392bbb7a7fe52
+- MEASUREMENT-DEC-005 sha256:9f1530a6409651204e38c81bc9183b40e461e77f83f1753f6b0bc1e346921416
+- MEASUREMENT-DEC-006 sha256:0f86101b227f12e9982fdcd30dbc96513ff780d4e2afa1bd35f5dfe5b8d3e1e4
 
 ## 1.0.0 - 2026-08-25
 
