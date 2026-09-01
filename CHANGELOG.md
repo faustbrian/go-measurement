@@ -9,7 +9,8 @@ versioning.
 
 - Align isolated dependency checks and architecture guards with standalone
   package module paths.
-- Adopt the released `go-library-tools` v1.0.13 contract while retaining the
+- Adopt the released `go-library-tools` v1.2.0 CLI and immutable merged
+  workflow `1f9629e5f27418600460b55a50a5b2fc81697fab` while retaining the
   measurement-specific architecture, security, and documentation checks.
 
 ### Documentation
