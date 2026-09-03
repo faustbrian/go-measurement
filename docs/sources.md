@@ -53,7 +53,9 @@ universal physical constants:
 round dimensions or final chargeable weight are deliberately outside the raw
 formula types and must be applied explicitly by the caller.
 
-The 2026-08-30 authority review retrieved the DHL, DB Schenker, and DSV sources.
+The 2026-09-03 authority review retrieved the DHL, DB Schenker, and DSV sources.
+The DSV response changed at the byte level, while the mapped international-road
+formula, factors, and Euro-pallet example remained unchanged.
 The FedEx URL returned a service-unavailable page, so its historical example
 remains executable arithmetic evidence but is not claimed as current pinned
 provider agreement. No maintained software unit-library differential is run;

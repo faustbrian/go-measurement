@@ -7,6 +7,15 @@ versioning.
 
 ### Changed
 
+- Adopt the `go-library-tools` v1.4.0 schema-v2 cohesion contract and local
+  `make cohesion` gate without changing the measurement API or runtime
+  behavior.
+- Pin reusable CI to the final v1.4.0 W14 workflow, preserve authoritative
+  source resolution, and enforce cohesion metadata in the required contract.
+- Refresh the reviewed DSV authority fingerprint after confirming its mapped
+  road-freight formulas and examples remain unchanged.
+- Adopt the public Go proxy checksums for `go-math` and `go-wire` v1.0.0.
+
 - Align isolated dependency checks and architecture guards with standalone
   package module paths.
 - Adopt the released `go-library-tools` v1.2.0 CLI and immutable merged
@@ -14,6 +23,10 @@ versioning.
   measurement-specific architecture, security, and documentation checks.
 
 ### Documentation
+
+- Publish the module's family, capabilities, ownership, lifecycle, supported
+  environments, package selection, and delivery status, and link the README to
+  the immutable v1.4.0 ecosystem index and family guidance.
 
 - Replace repeated README links with the repository-local documentation index.
 - Add the [specification decision register](docs/specification-decisions.md),

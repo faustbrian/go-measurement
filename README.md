@@ -43,5 +43,9 @@ Specification-backed behavior and its executable evidence are recorded in the
 [specification decision register](docs/specification-decisions.md) and
 [conformance matrix](specification/README.md).
 
+For ecosystem-wide selection and ownership guidance, see the versioned
+[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
+and its [Domain utilities family](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/design-language.md#package-families-and-selection).
+
 Run `make check` for all blocking local gates. See [CONTRIBUTING.md](CONTRIBUTING.md)
 and [CHANGELOG.md](CHANGELOG.md).
