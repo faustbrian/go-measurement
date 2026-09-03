@@ -7,6 +7,12 @@ versioning.
 
 ### Changed
 
+- Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
+  `make cohesion` gate without changing the measurement API or runtime
+  behavior.
+- Pin reusable CI to the v1.3.0 workflow and enforce cohesion metadata in the
+  repository's required CI contract.
+
 - Align isolated dependency checks and architecture guards with standalone
   package module paths.
 - Adopt the released `go-library-tools` v1.2.0 CLI and immutable merged
@@ -14,6 +20,10 @@ versioning.
   measurement-specific architecture, security, and documentation checks.
 
 ### Documentation
+
+- Publish the module's family, capabilities, ownership, lifecycle, supported
+  environments, package selection, and delivery status, and link the README to
+  the immutable v1.3.0 ecosystem index and family guidance.
 
 - Replace repeated README links with the repository-local documentation index.
 - Add the [specification decision register](docs/specification-decisions.md),
