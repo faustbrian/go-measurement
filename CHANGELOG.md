@@ -12,6 +12,9 @@ versioning.
   behavior.
 - Pin reusable CI to the final v1.4.0 W14 workflow, preserve authoritative
   source resolution, and enforce cohesion metadata in the required contract.
+- Refresh the reviewed DSV authority fingerprint after confirming its mapped
+  road-freight formulas and examples remain unchanged.
+- Adopt the public Go proxy checksums for `go-math` and `go-wire` v1.0.0.
 
 - Align isolated dependency checks and architecture guards with standalone
   package module paths.
