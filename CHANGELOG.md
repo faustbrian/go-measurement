@@ -7,11 +7,11 @@ versioning.
 
 ### Changed
 
-- Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
+- Adopt the `go-library-tools` v1.4.0 schema-v2 cohesion contract and local
   `make cohesion` gate without changing the measurement API or runtime
   behavior.
-- Pin reusable CI to the v1.3.0 workflow and enforce cohesion metadata in the
-  repository's required CI contract.
+- Pin reusable CI to the final v1.4.0 W14 workflow, preserve authoritative
+  source resolution, and enforce cohesion metadata in the required contract.
 
 - Align isolated dependency checks and architecture guards with standalone
   package module paths.
@@ -23,7 +23,7 @@ versioning.
 
 - Publish the module's family, capabilities, ownership, lifecycle, supported
   environments, package selection, and delivery status, and link the README to
-  the immutable v1.3.0 ecosystem index and family guidance.
+  the immutable v1.4.0 ecosystem index and family guidance.
 
 - Replace repeated README links with the repository-local documentation index.
 - Add the [specification decision register](docs/specification-decisions.md),
