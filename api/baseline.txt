@@ -6,7 +6,9 @@ units, dimensions, conversion policy, and arithmetic bounds.
 Decimal arithmetic is owned by github.com/faustbrian/go-math/decimal.
 Core quantities never convert through float32 or float64. Conversions either
 require an exact terminating result or an explicit scale and rounding mode.
-Loading metres remain semantically distinct from ordinary lengths.
+Context-suffixed operations propagate caller cancellation; their v1 counterparts
+without that suffix retain detached compatibility behavior. Loading metres
+remain semantically distinct from ordinary lengths.
 
 CONSTANTS
 
@@ -85,11 +87,29 @@ type Dimensions struct {
 func NewDimensions(length, width, height Quantity, quantity uint64) (Dimensions, error)
     NewDimensions validates a positive rectangular triple and bounded count.
 
-func (d Dimensions) CubicVolume(target Unit, context ConversionContext) (Quantity, error)
-    CubicVolume returns length multiplied by width and height in target.
+func (d Dimensions) CubicVolume(target Unit, conversion ConversionContext) (Quantity, error)
+    CubicVolume returns length multiplied by width and height in target without
+    caller cancellation.
 
-func (d Dimensions) FloorArea(target Unit, context ConversionContext) (Quantity, error)
-    FloorArea returns length multiplied by width in target.
+func (d Dimensions) CubicVolumeContext(
+	ctx context.Context,
+	target Unit,
+	conversion ConversionContext,
+) (Quantity, error)
+    CubicVolumeContext returns length multiplied by width and height in target
+    under caller cancellation.
+
+func (d Dimensions) FloorArea(target Unit, conversion ConversionContext) (Quantity, error)
+    FloorArea returns length multiplied by width in target without caller
+    cancellation.
+
+func (d Dimensions) FloorAreaContext(
+	ctx context.Context,
+	target Unit,
+	conversion ConversionContext,
+) (Quantity, error)
+    FloorAreaContext returns length multiplied by width in target under caller
+    cancellation.
 
 func (d Dimensions) Height() Quantity
     Height returns the original immutable height quantity.
@@ -100,11 +120,19 @@ func (d Dimensions) Length() Quantity
 func (d Dimensions) LoadingMetres(
 	truckWidth TruckWidth,
 	stacking StackingFactor,
-	context ConversionContext,
+	conversion ConversionContext,
 ) (Quantity, error)
     LoadingMetres calculates floor area / truck width / stacking factor and
     multiplies by package quantity. The result has semantic loading-metre
     identity and therefore cannot be added to ordinary lengths accidentally.
+
+func (d Dimensions) LoadingMetresContext(
+	ctx context.Context,
+	truckWidth TruckWidth,
+	stacking StackingFactor,
+	conversion ConversionContext,
+) (Quantity, error)
+    LoadingMetresContext calculates loading metres under caller cancellation.
 
 func (d Dimensions) MarshalJSON() ([]byte, error)
     MarshalJSON encodes every side's value and unit plus package quantity.
@@ -115,8 +143,17 @@ func (d Dimensions) MarshalXML(encoder *xml.Encoder, start xml.StartElement) err
 func (d Dimensions) Quantity() uint64
     Quantity returns the package count.
 
-func (d Dimensions) TotalVolume(target Unit, context ConversionContext) (Quantity, error)
-    TotalVolume multiplies one package's cubic volume by the package count.
+func (d Dimensions) TotalVolume(target Unit, conversion ConversionContext) (Quantity, error)
+    TotalVolume multiplies one package's cubic volume by the package count
+    without caller cancellation.
+
+func (d Dimensions) TotalVolumeContext(
+	ctx context.Context,
+	target Unit,
+	conversion ConversionContext,
+) (Quantity, error)
+    TotalVolumeContext multiplies one package's cubic volume by the package
+    count under caller cancellation.
 
 func (d *Dimensions) UnmarshalJSON(data []byte) error
     UnmarshalJSON decodes and validates a complete dimension triple.
@@ -166,32 +203,82 @@ func New(amount decimal.Decimal, unit Unit) (Quantity, error)
 func Parse(input string, profile Profile) (Quantity, error)
     Parse parses strict amount-space-unit text under profile.
 
-func (q Quantity) Add(other Quantity, context ConversionContext) (Quantity, error)
-    Add converts other into q's unit and returns their exact sum.
+func (q Quantity) Add(other Quantity, conversion ConversionContext) (Quantity, error)
+    Add converts other into q's unit and returns their exact sum without caller
+    cancellation.
+
+func (q Quantity) AddContext(
+	ctx context.Context,
+	other Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    AddContext converts other into q's unit and returns their exact sum under
+    caller cancellation.
 
 func (q Quantity) Amount() decimal.Decimal
     Amount returns the immutable decimal amount.
 
-func (q Quantity) Clamp(minimum, maximum Quantity, context ConversionContext) (Quantity, error)
-    Clamp restricts q to an inclusive compatible interval.
+func (q Quantity) Clamp(minimum, maximum Quantity, conversion ConversionContext) (Quantity, error)
+    Clamp restricts q to an inclusive compatible interval without caller
+    cancellation.
 
-func (q Quantity) Compare(other Quantity, context ConversionContext) (int, error)
-    Compare converts other into q's unit and compares numeric amounts.
+func (q Quantity) ClampContext(
+	ctx context.Context,
+	minimum, maximum Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    ClampContext restricts q to an inclusive compatible interval under caller
+    cancellation.
 
-func (q Quantity) Convert(target Unit, context ConversionContext) (Quantity, error)
-    Convert converts q into target under an explicit conversion context.
+func (q Quantity) Compare(other Quantity, conversion ConversionContext) (int, error)
+    Compare converts other into q's unit and compares numeric amounts without
+    caller cancellation.
+
+func (q Quantity) CompareContext(ctx context.Context, other Quantity, conversion ConversionContext) (int, error)
+    CompareContext converts other into q's unit and compares numeric amounts
+    under caller cancellation.
+
+func (q Quantity) Convert(target Unit, conversion ConversionContext) (Quantity, error)
+    Convert converts q into target without caller cancellation.
+
+    Use ConvertContext when the operation belongs to a caller-owned context.
+
+func (q Quantity) ConvertContext(
+	ctx context.Context,
+	target Unit,
+	conversion ConversionContext,
+) (Quantity, error)
+    ConvertContext converts q into target under caller cancellation and an
+    explicit conversion policy.
 
 func (q Quantity) Dimension() (Dimension, error)
     Dimension returns the unit's physical dimension.
 
-func (q Quantity) Divide(other Quantity, context ConversionContext) (Quantity, error)
-    Divide returns a supported canonical derived quantity.
+func (q Quantity) Divide(other Quantity, conversion ConversionContext) (Quantity, error)
+    Divide returns a supported canonical derived quantity without caller
+    cancellation.
 
-func (q Quantity) Equal(other Quantity, context ConversionContext) (bool, error)
-    Equal reports numeric equality after explicit compatible-unit conversion.
+func (q Quantity) DivideContext(
+	ctx context.Context,
+	other Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    DivideContext returns a supported canonical derived quantity under caller
+    cancellation.
+
+func (q Quantity) Equal(other Quantity, conversion ConversionContext) (bool, error)
+    Equal reports numeric equality without caller cancellation.
+
+func (q Quantity) EqualContext(ctx context.Context, other Quantity, conversion ConversionContext) (bool, error)
+    EqualContext reports numeric equality after explicit compatible-unit
+    conversion under caller cancellation.
 
 func (q Quantity) Format(options FormatOptions) (string, error)
-    Format converts, rounds, and formats a quantity under explicit options.
+    Format converts, rounds, and formats a quantity without caller cancellation.
+
+func (q Quantity) FormatContext(ctx context.Context, options FormatOptions) (string, error)
+    FormatContext converts, rounds, and formats a quantity under caller
+    cancellation and explicit options.
 
 func (q Quantity) MarshalJSON() ([]byte, error)
     MarshalJSON encodes value and unit metadata with the decimal as a string.
@@ -202,22 +289,53 @@ func (q Quantity) MarshalText() ([]byte, error)
 func (q Quantity) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error
     MarshalXML encodes value and unit metadata without numeric narrowing.
 
-func (q Quantity) Multiply(other Quantity, context ConversionContext) (Quantity, error)
-    Multiply returns a supported canonical derived quantity.
+func (q Quantity) Multiply(other Quantity, conversion ConversionContext) (Quantity, error)
+    Multiply returns a supported canonical derived quantity without caller
+    cancellation.
+
+func (q Quantity) MultiplyContext(
+	ctx context.Context,
+	other Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    MultiplyContext returns a supported canonical derived quantity under caller
+    cancellation.
 
 func (q Quantity) Round(scale int32, mode decimal.RoundingMode) (Quantity, error)
-    Round quantizes q at scale fractional places.
+    Round quantizes q at scale fractional places without caller cancellation.
+
+func (q Quantity) RoundContext(
+	ctx context.Context,
+	scale int32,
+	mode decimal.RoundingMode,
+) (Quantity, error)
+    RoundContext quantizes q at scale fractional places under caller
+    cancellation.
 
 func (q *Quantity) Scan(source any) error
     Scan reads lossless JSON text from a SQL driver.
 
 func (q Quantity) String() string
 
-func (q Quantity) Subtract(other Quantity, context ConversionContext) (Quantity, error)
-    Subtract converts other into q's unit and returns their exact difference.
+func (q Quantity) Subtract(other Quantity, conversion ConversionContext) (Quantity, error)
+    Subtract converts other into q's unit and returns their exact difference
+    without caller cancellation.
+
+func (q Quantity) SubtractContext(
+	ctx context.Context,
+	other Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    SubtractContext converts other into q's unit and returns their exact
+    difference under caller cancellation.
 
 func (q Quantity) Times(count uint64) (Quantity, error)
-    Times multiplies an amount by a bounded positive package count.
+    Times multiplies an amount by a bounded positive package count without
+    caller cancellation.
+
+func (q Quantity) TimesContext(ctx context.Context, count uint64) (Quantity, error)
+    TimesContext multiplies an amount by a bounded positive package count under
+    caller cancellation.
 
 func (q Quantity) Unit() Unit
     Unit returns the quantity's unit identity.
@@ -328,8 +446,17 @@ func (d VolumetricDivisor) VolumePerKilogram() decimal.Decimal
 func (d VolumetricDivisor) VolumeUnit() Unit
     VolumeUnit returns the divisor's explicit volume unit.
 
-func (d VolumetricDivisor) Weight(volume Quantity, context ConversionContext) (Quantity, error)
-    Weight calculates dimensional weight in kilograms.
+func (d VolumetricDivisor) Weight(volume Quantity, conversion ConversionContext) (Quantity, error)
+    Weight calculates dimensional weight in kilograms without caller
+    cancellation.
+
+func (d VolumetricDivisor) WeightContext(
+	ctx context.Context,
+	volume Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    WeightContext calculates dimensional weight in kilograms under caller
+    cancellation.
 
 type VolumetricIndex struct {
 	// Has unexported fields.
@@ -343,8 +470,17 @@ func NewVolumetricIndex(density Quantity) (VolumetricIndex, error)
 func (i VolumetricIndex) Density() Quantity
     Density returns the configured mass-per-volume quantity.
 
-func (i VolumetricIndex) Weight(volume Quantity, context ConversionContext) (Quantity, error)
-    Weight multiplies the index by a volume and returns canonical kilograms.
+func (i VolumetricIndex) Weight(volume Quantity, conversion ConversionContext) (Quantity, error)
+    Weight multiplies the index by a volume and returns canonical kilograms
+    without caller cancellation.
+
+func (i VolumetricIndex) WeightContext(
+	ctx context.Context,
+	volume Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    WeightContext multiplies the index by a volume and returns canonical
+    kilograms under caller cancellation.
 
 package measurementwire // import "github.com/faustbrian/go-measurement/measurementwire"
 

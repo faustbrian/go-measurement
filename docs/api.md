@@ -3,7 +3,28 @@
 `Quantity` owns a `decimal.Decimal` amount and `Unit`. `New` validates unit
 identity; accessors return immutable values. `Convert`, `Add`, `Subtract`,
 `Compare`, `Equal`, `Multiply`, `Divide`, `Round`, `Clamp`, `Times`, and
-`Format` return new values.
+`Format` return new values. Their additive context-suffixed counterparts accept
+`context.Context` first and propagate cancellation and deadlines through every
+composed decimal operation:
+
+- `ConvertContext`, `AddContext`, `SubtractContext`, `CompareContext`, and
+  `EqualContext`;
+- `MultiplyContext`, `DivideContext`, `RoundContext`, `TimesContext`,
+  `ClampContext`, and `FormatContext`;
+- `FloorAreaContext`, `CubicVolumeContext`, `TotalVolumeContext`, and
+  `LoadingMetresContext`; and
+- both `VolumetricDivisor.WeightContext` and
+  `VolumetricIndex.WeightContext`.
+
+Nil context is invalid. Pre-cancellation and expired deadlines take precedence
+over operation arguments. The v1 methods without a `Context` suffix remain
+available and delegate with `context.Background()`.
+
+Quantities, dimensions, and conversion policies are immutable and safe for
+concurrent reuse. `FormatOptions` is caller-owned and copied by value; it is
+safe to reuse concurrently only when callers do not mutate it concurrently.
+Operations own no goroutines, resources, or shutdown lifecycle, and no
+operation context is retained after a call returns.
 
 | Dimension | Units |
 | --- | --- |

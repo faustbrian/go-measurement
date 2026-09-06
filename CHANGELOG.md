@@ -5,15 +5,29 @@ versioning.
 
 ## Unreleased
 
+## 1.1.0 - 2026-09-06
+
+### Added
+
+- Add context-first conversion, arithmetic, formatting, dimension, and
+  volumetric operations that propagate caller cancellation and deadlines
+  through composed decimal work.
+
 ### Changed
+
+- Pin `go-math` v1.1.0 while preserving numeric, unit, wire, and non-context
+  error behavior.
+- Retain every v1 operation without a `Context` suffix as a compatibility
+  surface that delegates with `context.Background()`.
 
 - Adopt the `go-library-tools` v1.4.0 schema-v2 cohesion contract and local
   `make cohesion` gate without changing the measurement API or runtime
   behavior.
 - Pin reusable CI to the final v1.4.0 W14 workflow, preserve authoritative
   source resolution, and enforce cohesion metadata in the required contract.
-- Refresh the reviewed DSV authority fingerprint after confirming its mapped
-  road-freight formulas and examples remain unchanged.
+- Refresh the reviewed DSV authority fingerprint through its site migration
+  after confirming its mapped road-freight formulas and examples remain
+  unchanged.
 - Adopt the public Go proxy checksums for `go-math` and `go-wire` v1.0.0.
 
 - Align isolated dependency checks and architecture guards with standalone

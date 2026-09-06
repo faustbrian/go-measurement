@@ -19,5 +19,11 @@ length, err := measurement.Parse("1.25 metres", profile)
 
 Choose exact conversion when a non-terminating result must fail. Choose rounded
 conversion with an explicit fractional scale and `math` rounding mode at
-interoperability boundaries. Use `Format` when conversion and final display
-rounding are separate decisions.
+interoperability boundaries. Use `FormatContext` when conversion and final
+display rounding are separate decisions.
+
+Pass the request or job `context.Context` to `ConvertContext`, `AddContext`,
+and the other context-suffixed operations. Cancellation and an expired
+deadline are returned before invalid units, quantities, conversion policy, or
+format options are inspected. `ConversionContext` is a separate immutable
+arithmetic policy; it never stores a request context.
