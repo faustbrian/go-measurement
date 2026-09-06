@@ -2,6 +2,7 @@ package measurement
 
 import (
 	"bytes"
+	"context"
 	"database/sql/driver"
 	"encoding/json"
 	"encoding/xml"
@@ -138,17 +139,26 @@ type FormatOptions struct {
 	Separator  string
 }
 
-// Format converts, rounds, and formats a quantity under explicit options.
+// Format converts, rounds, and formats a quantity without caller cancellation.
 func (q Quantity) Format(options FormatOptions) (string, error) {
+	return q.FormatContext(context.Background(), options)
+}
+
+// FormatContext converts, rounds, and formats a quantity under caller
+// cancellation and explicit options.
+func (q Quantity) FormatContext(ctx context.Context, options FormatOptions) (string, error) {
+	if err := validateOperationContext(ctx); err != nil {
+		return "", err
+	}
 	if options.Unit == "" || len(options.Separator) > 16 || !utf8.ValidString(options.Separator) ||
 		strings.ContainsAny(options.Separator, "\r\n\x00") {
 		return "", ErrInvalidQuantity
 	}
-	converted, err := q.Convert(options.Unit, options.Conversion)
+	converted, err := q.ConvertContext(ctx, options.Unit, options.Conversion)
 	if err != nil {
 		return "", err
 	}
-	rounded, err := converted.Round(options.Scale, options.Rounding)
+	rounded, err := converted.RoundContext(ctx, options.Scale, options.Rounding)
 	if err != nil {
 		return "", err
 	}

@@ -1,6 +1,7 @@
 package measurement
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -55,38 +56,83 @@ func (d Dimensions) Height() Quantity { return d.height }
 // Quantity returns the package count.
 func (d Dimensions) Quantity() uint64 { return d.quantity }
 
-// FloorArea returns length multiplied by width in target.
-func (d Dimensions) FloorArea(target Unit, context ConversionContext) (Quantity, error) {
-	area, err := d.length.Multiply(d.width, context)
-	if err != nil {
-		return Quantity{}, err
-	}
-
-	return area.Convert(target, context)
+// FloorArea returns length multiplied by width in target without caller
+// cancellation.
+func (d Dimensions) FloorArea(target Unit, conversion ConversionContext) (Quantity, error) {
+	return d.FloorAreaContext(context.Background(), target, conversion)
 }
 
-// CubicVolume returns length multiplied by width and height in target.
-func (d Dimensions) CubicVolume(target Unit, context ConversionContext) (Quantity, error) {
-	area, err := d.length.Multiply(d.width, context)
-	if err != nil {
+// FloorAreaContext returns length multiplied by width in target under caller
+// cancellation.
+func (d Dimensions) FloorAreaContext(
+	ctx context.Context,
+	target Unit,
+	conversion ConversionContext,
+) (Quantity, error) {
+	if err := validateOperationContext(ctx); err != nil {
 		return Quantity{}, err
 	}
-	volume, err := area.Multiply(d.height, context)
+	area, err := d.length.MultiplyContext(ctx, d.width, conversion)
 	if err != nil {
 		return Quantity{}, err
 	}
 
-	return volume.Convert(target, context)
+	return area.ConvertContext(ctx, target, conversion)
 }
 
-// TotalVolume multiplies one package's cubic volume by the package count.
-func (d Dimensions) TotalVolume(target Unit, context ConversionContext) (Quantity, error) {
-	volume, err := d.CubicVolume(target, context)
+// CubicVolume returns length multiplied by width and height in target without
+// caller cancellation.
+func (d Dimensions) CubicVolume(target Unit, conversion ConversionContext) (Quantity, error) {
+	return d.CubicVolumeContext(context.Background(), target, conversion)
+}
+
+// CubicVolumeContext returns length multiplied by width and height in target
+// under caller cancellation.
+func (d Dimensions) CubicVolumeContext(
+	ctx context.Context,
+	target Unit,
+	conversion ConversionContext,
+) (Quantity, error) {
+	if err := validateOperationContext(ctx); err != nil {
+		return Quantity{}, err
+	}
+	area, err := d.length.MultiplyContext(ctx, d.width, conversion)
+	if err != nil {
+		return Quantity{}, err
+	}
+	volume, err := area.MultiplyContext(ctx, d.height, conversion)
 	if err != nil {
 		return Quantity{}, err
 	}
 
-	amount, err := context.multiply(volume.amount, decimal.MustParse(strconv.FormatUint(d.quantity, 10)))
+	return volume.ConvertContext(ctx, target, conversion)
+}
+
+// TotalVolume multiplies one package's cubic volume by the package count
+// without caller cancellation.
+func (d Dimensions) TotalVolume(target Unit, conversion ConversionContext) (Quantity, error) {
+	return d.TotalVolumeContext(context.Background(), target, conversion)
+}
+
+// TotalVolumeContext multiplies one package's cubic volume by the package
+// count under caller cancellation.
+func (d Dimensions) TotalVolumeContext(
+	ctx context.Context,
+	target Unit,
+	conversion ConversionContext,
+) (Quantity, error) {
+	if err := validateOperationContext(ctx); err != nil {
+		return Quantity{}, err
+	}
+	volume, err := d.CubicVolumeContext(ctx, target, conversion)
+	if err != nil {
+		return Quantity{}, err
+	}
+	if err := validateOperationContext(ctx); err != nil {
+		return Quantity{}, err
+	}
+
+	amount, err := conversion.multiplyContext(ctx, volume.amount, decimal.MustParse(strconv.FormatUint(d.quantity, 10)))
 	if err != nil {
 		return Quantity{}, err
 	}
@@ -141,26 +187,42 @@ func (s StackingFactor) Decimal() decimal.Decimal { return s.factor }
 func (d Dimensions) LoadingMetres(
 	truckWidth TruckWidth,
 	stacking StackingFactor,
-	context ConversionContext,
+	conversion ConversionContext,
 ) (Quantity, error) {
-	area, err := d.FloorArea(SquareMetre, context)
+	return d.LoadingMetresContext(context.Background(), truckWidth, stacking, conversion)
+}
+
+// LoadingMetresContext calculates loading metres under caller cancellation.
+func (d Dimensions) LoadingMetresContext(
+	ctx context.Context,
+	truckWidth TruckWidth,
+	stacking StackingFactor,
+	conversion ConversionContext,
+) (Quantity, error) {
+	if err := validateOperationContext(ctx); err != nil {
+		return Quantity{}, err
+	}
+	area, err := d.FloorAreaContext(ctx, SquareMetre, conversion)
 	if err != nil {
 		return Quantity{}, err
 	}
-	width, err := truckWidth.width.Convert(Metre, context)
+	width, err := truckWidth.width.ConvertContext(ctx, Metre, conversion)
 	if err != nil {
 		return Quantity{}, err
 	}
-	length, err := area.Divide(width, context)
+	length, err := area.DivideContext(ctx, width, conversion)
 	if err != nil {
 		return Quantity{}, err
 	}
-	perPackage, err := context.divide(length.amount, stacking.factor)
+	perPackage, err := conversion.divideContext(ctx, length.amount, stacking.factor)
 	if err != nil {
+		return Quantity{}, err
+	}
+	if err := validateOperationContext(ctx); err != nil {
 		return Quantity{}, err
 	}
 
-	amount, err := context.multiply(perPackage, decimal.MustParse(strconv.FormatUint(d.quantity, 10)))
+	amount, err := conversion.multiplyContext(ctx, perPackage, decimal.MustParse(strconv.FormatUint(d.quantity, 10)))
 	if err != nil {
 		return Quantity{}, err
 	}
@@ -200,8 +262,22 @@ func (d VolumetricDivisor) VolumePerKilogram() decimal.Decimal { return d.volume
 // VolumeUnit returns the divisor's explicit volume unit.
 func (d VolumetricDivisor) VolumeUnit() Unit { return d.volumeUnit }
 
-// Weight calculates dimensional weight in kilograms.
-func (d VolumetricDivisor) Weight(volume Quantity, context ConversionContext) (Quantity, error) {
+// Weight calculates dimensional weight in kilograms without caller
+// cancellation.
+func (d VolumetricDivisor) Weight(volume Quantity, conversion ConversionContext) (Quantity, error) {
+	return d.WeightContext(context.Background(), volume, conversion)
+}
+
+// WeightContext calculates dimensional weight in kilograms under caller
+// cancellation.
+func (d VolumetricDivisor) WeightContext(
+	ctx context.Context,
+	volume Quantity,
+	conversion ConversionContext,
+) (Quantity, error) {
+	if err := validateOperationContext(ctx); err != nil {
+		return Quantity{}, err
+	}
 	dimension, err := volume.Dimension()
 	if err != nil {
 		return Quantity{}, err
@@ -209,11 +285,11 @@ func (d VolumetricDivisor) Weight(volume Quantity, context ConversionContext) (Q
 	if dimension != VolumeDimension {
 		return Quantity{}, fmt.Errorf("%w: volumetric input must be volume", ErrDimensionMismatch)
 	}
-	converted, err := volume.Convert(d.volumeUnit, context)
+	converted, err := volume.ConvertContext(ctx, d.volumeUnit, conversion)
 	if err != nil {
 		return Quantity{}, err
 	}
-	weight, err := context.divide(converted.amount, d.volumePerKilogram)
+	weight, err := conversion.divideContext(ctx, converted.amount, d.volumePerKilogram)
 	if err != nil {
 		return Quantity{}, err
 	}
@@ -244,8 +320,22 @@ func NewVolumetricIndex(density Quantity) (VolumetricIndex, error) {
 // Density returns the configured mass-per-volume quantity.
 func (i VolumetricIndex) Density() Quantity { return i.density }
 
-// Weight multiplies the index by a volume and returns canonical kilograms.
-func (i VolumetricIndex) Weight(volume Quantity, context ConversionContext) (Quantity, error) {
+// Weight multiplies the index by a volume and returns canonical kilograms
+// without caller cancellation.
+func (i VolumetricIndex) Weight(volume Quantity, conversion ConversionContext) (Quantity, error) {
+	return i.WeightContext(context.Background(), volume, conversion)
+}
+
+// WeightContext multiplies the index by a volume and returns canonical
+// kilograms under caller cancellation.
+func (i VolumetricIndex) WeightContext(
+	ctx context.Context,
+	volume Quantity,
+	conversion ConversionContext,
+) (Quantity, error) {
+	if err := validateOperationContext(ctx); err != nil {
+		return Quantity{}, err
+	}
 	dimension, err := volume.Dimension()
 	if err != nil {
 		return Quantity{}, err
@@ -253,10 +343,10 @@ func (i VolumetricIndex) Weight(volume Quantity, context ConversionContext) (Qua
 	if dimension != VolumeDimension {
 		return Quantity{}, fmt.Errorf("%w: volumetric input must be volume", ErrDimensionMismatch)
 	}
-	weight, err := i.density.Multiply(volume, context)
+	weight, err := i.density.MultiplyContext(ctx, volume, conversion)
 	if err != nil {
 		return Quantity{}, err
 	}
 
-	return weight.Convert(Kilogram, context)
+	return weight.ConvertContext(ctx, Kilogram, conversion)
 }

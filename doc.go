@@ -4,5 +4,7 @@
 // Decimal arithmetic is owned by github.com/faustbrian/go-math/decimal. Core
 // quantities never convert through float32 or float64. Conversions either
 // require an exact terminating result or an explicit scale and rounding mode.
-// Loading metres remain semantically distinct from ordinary lengths.
+// Context-suffixed operations propagate caller cancellation; their v1
+// counterparts without that suffix retain detached compatibility behavior. Loading metres
+// remain semantically distinct from ordinary lengths.
 package measurement

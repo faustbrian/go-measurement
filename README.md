@@ -17,10 +17,7 @@ floating-point conversion.
 
 ```go
 length := measurement.MustNew(decimal.MustParse("1.25"), measurement.Metre)
-centimetres, err := length.Convert(
-    measurement.Centimetre,
-    measurement.ExactConversion(),
-)
+centimetres, err := length.Convert(measurement.Centimetre, measurement.ExactConversion())
 // centimetres.String() == "125.00 cm"
 ```
 
@@ -34,6 +31,11 @@ intervals are not part of the v1 model.
 Every conversion selects either `ExactConversion()` or
 `RoundedConversion(scale, mode)`. Unit aliases are accepted only through a
 caller-selected `Profile`; no locale or preferred unit is inferred.
+`context.Context` controls caller cancellation and deadlines, while
+`ConversionContext` controls arithmetic limits and rounding. Use the
+context-suffixed arithmetic, conversion, formatting, and logistics methods for
+request- or job-scoped work. The v1 methods without that suffix remain
+compatible and run with `context.Background()`.
 
 ## Documentation
 

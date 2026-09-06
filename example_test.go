@@ -1,6 +1,7 @@
 package measurement_test
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/faustbrian/go-math/decimal"
@@ -10,6 +11,19 @@ import (
 func ExampleQuantity_Convert() {
 	length := measurement.MustNew(decimal.MustParse("1.25"), measurement.Metre)
 	converted, _ := length.Convert(measurement.Centimetre, measurement.ExactConversion())
+	fmt.Println(converted)
+
+	// Output:
+	// 125.00 cm
+}
+
+func ExampleQuantity_ConvertContext() {
+	length := measurement.MustNew(decimal.MustParse("1.25"), measurement.Metre)
+	converted, _ := length.ConvertContext(
+		context.Background(),
+		measurement.Centimetre,
+		measurement.ExactConversion(),
+	)
 	fmt.Println(converted)
 
 	// Output:

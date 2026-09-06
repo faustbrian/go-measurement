@@ -15,3 +15,18 @@ Do not assume historical rows use the current preferred unit. Dual-read old and
 new representations during rollout, compare exact canonical values, then stop
 writing the old shape. Preserve golden fixtures from Track, Postal, and
 Location during migration.
+
+## Adopt caller cancellation
+
+Existing v1 operations without a `Context` suffix remain source- and
+behavior-compatible and run with `context.Background()`. For request-, job-,
+or deadline-bounded work, replace such a call with its additive `...Context`
+counterpart and pass the operation context first:
+
+```go
+converted, err := quantity.ConvertContext(ctx, target, conversion)
+```
+
+Keep passing `ConversionContext` separately; it owns arithmetic precision,
+rounding, and limits, not cancellation. There is no required migration for
+callers that intentionally retain the detached v1 behavior.
