@@ -16,6 +16,8 @@ validation, and error behavior and delegates with `context.Background()`.
 Migrate only callers that need operation cancellation or deadline propagation.
 
 `math` owns decimal representation, rounding modes, errors, conditions, and
-resource limits. `wire` is used only by the optional `measurementwire`
-subpackage. `money` owns monetary values and `geo` owns earth-coordinate
-distance semantics.
+resource limits. `wire` is used only by the optional `adapters/wire` package.
+The former `measurementwire` path is a deprecated delegation-only facade that
+retains its named `Options` type and function signatures. It is first eligible
+for removal in v2.0.0 and never before 2027-03-08. `money` owns monetary values
+and `geo` owns earth-coordinate distance semantics.

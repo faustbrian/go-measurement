@@ -5,13 +5,23 @@ versioning.
 
 ## Unreleased
 
-## 1.1.0 - 2026-09-06
+## 1.1.0 - 2026-09-09
 
 ### Added
+
+- Add `adapters/wire` as the target-oriented entry point for bounded JSON and
+  XML quantity encoding and decoding.
 
 - Add context-first conversion, arithmetic, formatting, dimension, and
   volumetric operations that propagate caller cancellation and deadlines
   through composed decimal work.
+
+### Deprecated
+
+- Retain `measurementwire` as a delegation-only compatibility facade with its
+  existing `Options`, `Encode`, and `Decode` contracts; new consumers should
+  import `adapters/wire`. The earliest permitted removal is v2.0.0 and never
+  before 2027-03-08.
 
 ### Changed
 

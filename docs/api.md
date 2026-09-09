@@ -44,3 +44,24 @@ Loading metres deliberately cannot combine with ordinary lengths.
 `Dimensions` validates positive length, width, and height plus a bounded count.
 It calculates floor area, package volume, total volume, and loading metres.
 `VolumetricDivisor` and `VolumetricIndex` calculate dimensional mass.
+
+## Wire adapter
+
+Import `github.com/faustbrian/go-measurement/adapters/wire` when an untrusted
+JSON or XML quantity document needs a caller-selected byte limit. The adapter
+exports `Options{MaxBytes int64}`, `Encode(Quantity, wire.Format, Options)`, and
+`Decode([]byte, wire.Format, Options)`. A zero `MaxBytes` retains the selected
+`go-wire` codec's default limit; a positive value supplies an explicit
+limit.
+
+JSON decoding is strict and rejects unknown fields. XML decoding requires the
+`quantity` root. Both formats preserve decimal text and unit identity, and the
+decoded value does not retain the caller's payload. Oversized documents remain
+classifiable with `wire.ErrSizeLimit`; unsupported or unknown formats remain
+classifiable with `wire.ErrUnsupportedFormat`.
+
+`github.com/faustbrian/go-measurement/measurementwire` retains the same
+`Options`, `Encode`, and `Decode` signatures as a deprecated delegation-only
+compatibility facade. Its named `Options` type keeps the legacy package's
+reflection identity. New callers should use `adapters/wire`; the earliest
+permitted removal of the legacy path is v2.0.0 and never before 2027-03-08.
