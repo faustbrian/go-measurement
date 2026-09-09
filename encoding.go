@@ -14,8 +14,8 @@ import (
 	"github.com/faustbrian/go-math/decimal"
 )
 
-// MaxSerializedBytes bounds direct JSON and SQL decoding. Use measurementwire
-// for streaming codecs and caller-selected tighter limits.
+// MaxSerializedBytes bounds direct JSON and SQL decoding. Use adapters/wire
+// for streaming codecs and caller-selected explicit limits.
 const MaxSerializedBytes = 64 << 10
 
 type encodedQuantity struct {

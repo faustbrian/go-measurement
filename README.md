@@ -45,6 +45,10 @@ Specification-backed behavior and its executable evidence are recorded in the
 [specification decision register](docs/specification-decisions.md) and
 [conformance matrix](specification/README.md).
 
+Use [`adapters/wire`](https://pkg.go.dev/github.com/faustbrian/go-measurement/adapters/wire)
+for bounded JSON and XML quantity encoding. The former `measurementwire` path
+remains available as a deprecated compatibility facade.
+
 For ecosystem-wide selection and ownership guidance, see the versioned
 [Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
 and its [Domain utilities family](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/design-language.md#package-families-and-selection).

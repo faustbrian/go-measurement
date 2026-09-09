@@ -24,8 +24,8 @@ const MaxPackageQuantity uint64 = 1_000_000
     MaxPackageQuantity bounds shipment formula work and integer conversion.
 
 const MaxSerializedBytes = 64 << 10
-    MaxSerializedBytes bounds direct JSON and SQL decoding. Use measurementwire
-    for streaming codecs and caller-selected tighter limits.
+    MaxSerializedBytes bounds direct JSON and SQL decoding. Use adapters/wire
+    for streaming codecs and caller-selected explicit limits.
 
 
 VARIABLES
@@ -482,10 +482,37 @@ func (i VolumetricIndex) WeightContext(
     WeightContext multiplies the index by a volume and returns canonical
     kilograms under caller cancellation.
 
-package measurementwire // import "github.com/faustbrian/go-measurement/measurementwire"
+package measurementwire // import "github.com/faustbrian/go-measurement/adapters/wire"
 
 Package measurementwire adapts Quantity to bounded wire JSON and XML codecs
 while preserving decimal and unit metadata.
+
+FUNCTIONS
+
+func Decode(payload []byte, format wire.Format, options Options) (measurement.Quantity, error)
+    Decode parses exactly one bounded quantity document in an explicitly
+    selected supported format. The returned Quantity does not retain payload.
+
+func Encode(quantity measurement.Quantity, format wire.Format, options Options) ([]byte, error)
+    Encode serializes quantity in an explicitly selected supported format.
+
+
+TYPES
+
+type Options struct {
+	MaxBytes int64
+}
+    Options bounds encoded and decoded documents. Zero values retain the
+    selected wire codec's defaults.
+
+package measurementwire // import "github.com/faustbrian/go-measurement/measurementwire"
+
+Package measurementwire is the compatibility facade for the bounded measurement
+wire adapter.
+
+Deprecated: use github.com/faustbrian/go-measurement/adapters/wire, introduced
+in v1.1.0 with the same Options, Encode, and Decode usage. The earliest
+permitted removal is v2.0.0 and never before 2027-03-08.
 
 FUNCTIONS
 
@@ -502,4 +529,6 @@ TYPES
 type Options struct {
 	MaxBytes int64
 }
-    Options bounds encoded and decoded documents.
+    Options bounds encoded and decoded documents. It remains a distinct named
+    compatibility type so reflection-based consumers retain the legacy package
+    identity.

@@ -16,6 +16,18 @@
     },
     {
       "module_directory": ".",
+      "directory": "adapters/wire",
+      "name": "measurementwire",
+      "import_path": "github.com/faustbrian/go-measurement/adapters/wire",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
       "directory": "measurementwire",
       "name": "measurementwire",
       "import_path": "github.com/faustbrian/go-measurement/measurementwire",

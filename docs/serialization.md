@@ -17,10 +17,11 @@ duplicate fields, unsupported units, invalid decimals, and documents beyond
 
 Direct XML decoding rejects unknown and duplicate fields. Core XML callbacks
 cannot bound bytes already read by a caller-owned decoder, so untrusted XML
-must enter through the bounded `measurementwire` adapter.
+must enter through the bounded `adapters/wire` package.
 
-The optional `measurementwire` package uses `wire/jsonwire` and
+The optional `adapters/wire` package uses `wire/jsonwire` and
 `wire/xmlwire` with caller-selected byte limits. It supports only explicit
 JSON and XML formats. Use this adapter at untrusted streaming boundaries; core
 `encoding/xml` callbacks cannot bound bytes already consumed by an external
-decoder.
+decoder. The former `measurementwire` path delegates to this implementation
+and remains available for compatibility.

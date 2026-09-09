@@ -19,6 +19,7 @@ api:
     path: api/baseline.txt
     packages:
     - .
+    - ./adapters/wire
     - ./measurementwire
 operations:
 - module: .
