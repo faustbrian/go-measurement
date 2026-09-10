@@ -5,6 +5,11 @@ versioning.
 
 ## Unreleased
 
+### Documentation
+
+- Require Go 1.27.0 across the repository's module language, minimum
+  compatibility, development, and CI toolchain claims.
+
 ## 1.1.0 - 2026-09-09
 
 ### Added
