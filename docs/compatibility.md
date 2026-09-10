@@ -1,6 +1,6 @@
 # Compatibility
 
-The minimum supported Go version is 1.26.6. Public API compatibility follows
+The minimum supported Go version is 1.27.0. Public API compatibility follows
 semantic versioning. Incompatible changes are recorded in
 the changelog and API baseline.
 
