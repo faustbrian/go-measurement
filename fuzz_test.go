@@ -2,10 +2,9 @@ package measurement_test
 
 import (
 	"encoding/json"
-	"encoding/xml"
 	"testing"
 
-	measurement "github.com/faustbrian/go-measurement"
+	measurement "github.com/faustbrian/go-measurement/v2"
 )
 
 func FuzzParseAndTextRoundTrip(f *testing.F) {
@@ -65,14 +64,17 @@ func FuzzQuantityXMLAndSQL(f *testing.F) {
 	for _, seed := range []string{
 		`<quantity><value>1.25</value><unit>m</unit></quantity>`,
 		`<quantity><value>bad</value><unit>m</unit></quantity>`,
+		`<quantity><value><nested>1</nested></value><unit>m</unit></quantity>`,
+		`<!DOCTYPE quantity [<!ENTITY x "1">]><quantity><value>&x;</value><unit>m</unit></quantity>`,
+		`<quantity><value>1</value><value>2</value><unit>m</unit></quantity>`,
 		``,
 	} {
 		f.Add(seed)
 	}
 
 	f.Fuzz(func(t *testing.T, input string) {
-		var quantity measurement.Quantity
-		if err := xml.Unmarshal([]byte(input), &quantity); err != nil {
+		quantity, err := measurement.ParseQuantityXML([]byte(input))
+		if err != nil {
 			return
 		}
 		value, err := quantity.Value()

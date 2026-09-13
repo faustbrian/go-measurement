@@ -10,7 +10,7 @@ import (
 
 	gomath "github.com/faustbrian/go-math"
 	"github.com/faustbrian/go-math/decimal"
-	measurement "github.com/faustbrian/go-measurement"
+	measurement "github.com/faustbrian/go-measurement/v2"
 )
 
 func TestContextFirstSurfaceCompiles(t *testing.T) {

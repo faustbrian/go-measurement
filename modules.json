@@ -5,14 +5,14 @@
   "modules": [
     {
       "directory": ".",
-      "module_path": "github.com/faustbrian/go-measurement",
+      "module_path": "github.com/faustbrian/go-measurement/v2",
       "go_version": "1.27.0",
       "packages": [
         {
           "module_directory": ".",
           "directory": ".",
           "name": "measurement",
-          "import_path": "github.com/faustbrian/go-measurement",
+          "import_path": "github.com/faustbrian/go-measurement/v2",
           "kind": "public",
           "production": true,
           "executable": true,
@@ -24,7 +24,7 @@
           "module_directory": ".",
           "directory": "adapters/wire",
           "name": "measurementwire",
-          "import_path": "github.com/faustbrian/go-measurement/adapters/wire",
+          "import_path": "github.com/faustbrian/go-measurement/v2/adapters/wire",
           "kind": "public",
           "production": true,
           "executable": true,
@@ -36,7 +36,7 @@
           "module_directory": ".",
           "directory": "measurementwire",
           "name": "measurementwire",
-          "import_path": "github.com/faustbrian/go-measurement/measurementwire",
+          "import_path": "github.com/faustbrian/go-measurement/v2/measurementwire",
           "kind": "public",
           "production": true,
           "executable": true,
@@ -46,14 +46,14 @@
         }
       ],
       "purpose": "`measurement` is an immutable, exact, unit-safe measurement package for Track, Postal, Location, and logistics services. It uses github.com/faustbrian/go-math/decimal exclusively and never requires binary floating-point conversion.",
-      "lifecycle": "stable",
+      "lifecycle": "planned",
       "kind": "public library",
-      "releasable": true,
+      "releasable": false,
       "family": "domain-utilities",
       "family_label": "Domain Utilities",
       "family_description": "Domain-specific immutable values, algorithms, parsers, proofs, and calculations.",
       "family_order": 8,
-      "version": "1.1.0",
+      "version": "2.0.0",
       "tag_prefix": "v",
       "owned_dependencies": [
         "github.com/faustbrian/go-math",
@@ -101,15 +101,15 @@
         ],
         "public_package_identifier": "measurement",
         "primary_entry_packages": [
-          "github.com/faustbrian/go-measurement"
+          "github.com/faustbrian/go-measurement/v2"
         ],
         "package_selection": {
-          "github.com/faustbrian/go-measurement": "Use for immutable quantities, dimensions, exact or explicitly rounded conversions, and logistics formulas.",
-          "github.com/faustbrian/go-measurement/adapters/wire": "Use for bounded JSON and XML encoding or decoding through the Golib wire contracts.",
-          "github.com/faustbrian/go-measurement/measurementwire": "Deprecated compatibility path for bounded wire encoding; use adapters/wire."
+          "github.com/faustbrian/go-measurement/v2": "Use for immutable quantities, dimensions, exact or explicitly rounded conversions, and logistics formulas.",
+          "github.com/faustbrian/go-measurement/v2/adapters/wire": "Use for bounded JSON and XML encoding or decoding through the Golib wire contracts.",
+          "github.com/faustbrian/go-measurement/v2/measurementwire": "Deprecated compatibility path for bounded wire encoding; use adapters/wire."
         },
         "lifecycle_status": "active",
-        "maturity": "stable",
+        "maturity": "preview",
         "construction_styles": [
           "must-helper",
           "plain-function",
@@ -128,8 +128,8 @@
         },
         "optional_owned_dependencies": [],
         "adapters": [
-          "github.com/faustbrian/go-measurement/adapters/wire",
-          "github.com/faustbrian/go-measurement/measurementwire"
+          "github.com/faustbrian/go-measurement/v2/adapters/wire",
+          "github.com/faustbrian/go-measurement/v2/measurementwire"
         ],
         "companions": [],
         "supported_go": {
@@ -165,7 +165,7 @@
         "delivery": {
           "implementation": "in-progress",
           "hardening": "in-progress",
-          "release": "in-progress"
+          "release": "blocked"
         }
       },
       "gates": {

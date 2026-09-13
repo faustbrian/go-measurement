@@ -1,0 +1,555 @@
+package measurement // import "github.com/faustbrian/go-measurement/v2"
+
+Package measurement provides immutable exact logistics quantities with explicit
+units, dimensions, conversion policy, and arithmetic bounds.
+
+Decimal arithmetic is owned by github.com/faustbrian/go-math/decimal.
+Core quantities never convert through float32 or float64. Conversions either
+require an exact terminating result or an explicit scale and rounding mode.
+Context-suffixed operations propagate caller cancellation; their v1 counterparts
+without that suffix retain detached compatibility behavior. Loading metres
+remain semantically distinct from ordinary lengths.
+
+CONSTANTS
+
+const (
+	// MaxSerializedBytes bounds direct JSON, XML, and SQL decoding.
+	MaxSerializedBytes = 64 << 10
+	// MaxXMLDepth bounds the fixed measurement XML schema.
+	MaxXMLDepth = 3
+	// MaxXMLTokens bounds token work in one measurement XML document.
+	MaxXMLTokens = 64
+)
+const (
+	// MaxTextBytes bounds canonical and profile-based text parsing.
+	MaxTextBytes = 4096
+	// MaxAliasBytes bounds unit tokens resolved through a profile.
+	MaxAliasBytes = 128
+	// MaxProfileAliases bounds caller-defined unit-token catalogs.
+	MaxProfileAliases = 1024
+)
+const MaxPackageQuantity uint64 = 1_000_000
+    MaxPackageQuantity bounds shipment formula work and integer conversion.
+
+
+VARIABLES
+
+var (
+	// ErrInvalidQuantity reports malformed, nonpositive, or unbounded input.
+	ErrInvalidQuantity      = errors.New("measurement: invalid quantity")
+	ErrUnknownUnit          = errors.New("measurement: unknown unit")
+	ErrDimensionMismatch    = errors.New("measurement: dimension mismatch")
+	ErrUnsupportedDimension = errors.New("measurement: unsupported dimension")
+	ErrAffineArithmetic     = errors.New("measurement: affine temperature arithmetic")
+	ErrInvalidContext       = errors.New("measurement: invalid conversion context")
+	// ErrUnboundedXML reports use of encoding/xml's callback API, which cannot
+	// impose a byte limit before the decoder allocates the current token.
+	ErrUnboundedXML = errors.New("measurement: unbounded XML decoder")
+)
+    Package errors classify validation, unit, dimension, context, and parser
+    boundary failures.
+
+
+TYPES
+
+type ConversionContext struct {
+	// Has unexported fields.
+}
+    ConversionContext makes exact versus rounded conversion an explicit caller
+    choice.
+
+func ExactConversion() ConversionContext
+    ExactConversion returns a context that rejects non-terminating quotients.
+
+func RoundedConversion(scale int32, mode decimal.RoundingMode) ConversionContext
+    RoundedConversion returns a context that rounds the combined final ratio at
+    scale fractional places.
+
+func (c ConversionContext) WithLimits(limits gomath.Limits) ConversionContext
+    WithLimits returns a copy using explicit arithmetic resource limits.
+
+type Dimension uint8
+    Dimension is a closed physical-dimension identity. Loading metre has a
+    distinct semantic identity even though its displayed unit contains metres.
+
+const (
+	// Dimensionless identifies ratios and counts with unit one.
+	Dimensionless Dimension = iota
+	LengthDimension
+	AreaDimension
+	VolumeDimension
+	MassDimension
+	TemperatureDimension
+	DensityDimension
+	LoadingMetreDimension
+)
+    Supported dimensions form the closed physical ontology.
+
+func (d Dimension) String() string
+
+type Dimensions struct {
+	// Has unexported fields.
+}
+    Dimensions is an immutable rectangular package triple and package count.
+
+func NewDimensions(length, width, height Quantity, quantity uint64) (Dimensions, error)
+    NewDimensions validates a positive rectangular triple and bounded count.
+
+func ParseDimensionsXML(data []byte) (Dimensions, error)
+    ParseDimensionsXML parses one strict, byte-bounded dimensions XML document.
+
+func (d Dimensions) CubicVolume(target Unit, conversion ConversionContext) (Quantity, error)
+    CubicVolume returns length multiplied by width and height in target without
+    caller cancellation.
+
+func (d Dimensions) CubicVolumeContext(
+	ctx context.Context,
+	target Unit,
+	conversion ConversionContext,
+) (Quantity, error)
+    CubicVolumeContext returns length multiplied by width and height in target
+    under caller cancellation.
+
+func (d Dimensions) FloorArea(target Unit, conversion ConversionContext) (Quantity, error)
+    FloorArea returns length multiplied by width in target without caller
+    cancellation.
+
+func (d Dimensions) FloorAreaContext(
+	ctx context.Context,
+	target Unit,
+	conversion ConversionContext,
+) (Quantity, error)
+    FloorAreaContext returns length multiplied by width in target under caller
+    cancellation.
+
+func (d Dimensions) Height() Quantity
+    Height returns the original immutable height quantity.
+
+func (d Dimensions) Length() Quantity
+    Length returns the original immutable length quantity.
+
+func (d Dimensions) LoadingMetres(
+	truckWidth TruckWidth,
+	stacking StackingFactor,
+	conversion ConversionContext,
+) (Quantity, error)
+    LoadingMetres calculates floor area / truck width / stacking factor and
+    multiplies by package quantity. The result has semantic loading-metre
+    identity and therefore cannot be added to ordinary lengths accidentally.
+
+func (d Dimensions) LoadingMetresContext(
+	ctx context.Context,
+	truckWidth TruckWidth,
+	stacking StackingFactor,
+	conversion ConversionContext,
+) (Quantity, error)
+    LoadingMetresContext calculates loading metres under caller cancellation.
+
+func (d Dimensions) MarshalJSON() ([]byte, error)
+    MarshalJSON encodes every side's value and unit plus package quantity.
+
+func (d Dimensions) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error
+    MarshalXML encodes every side's value and unit plus package quantity.
+
+func (d Dimensions) Quantity() uint64
+    Quantity returns the package count.
+
+func (d Dimensions) TotalVolume(target Unit, conversion ConversionContext) (Quantity, error)
+    TotalVolume multiplies one package's cubic volume by the package count
+    without caller cancellation.
+
+func (d Dimensions) TotalVolumeContext(
+	ctx context.Context,
+	target Unit,
+	conversion ConversionContext,
+) (Quantity, error)
+    TotalVolumeContext multiplies one package's cubic volume by the package
+    count under caller cancellation.
+
+func (d *Dimensions) UnmarshalJSON(data []byte) error
+    UnmarshalJSON decodes and validates a complete dimension triple.
+
+func (d *Dimensions) UnmarshalXML(_ *xml.Decoder, _ xml.StartElement) error
+    UnmarshalXML fails closed because encoding/xml invokes this callback only
+    after its caller-owned decoder has parsed and allocated the start token.
+    Use ParseDimensionsXML for byte-bounded XML input.
+
+func (d Dimensions) Width() Quantity
+    Width returns the original immutable width quantity.
+
+type FormatOptions struct {
+	Unit       Unit
+	Conversion ConversionContext
+	Scale      int32
+	Rounding   decimal.RoundingMode
+	Separator  string
+}
+    FormatOptions contains every conversion and display decision. No locale or
+    preferred unit is inferred.
+
+type Profile struct {
+	// Has unexported fields.
+}
+    Profile is an immutable explicit mapping of accepted unit tokens.
+
+func NewProfile(aliases map[string]Unit) (Profile, error)
+    NewProfile validates and defensively copies an explicit alias-to-unit
+    policy.
+
+func SymbolProfile() Profile
+    SymbolProfile accepts only canonical unit symbols.
+
+func (p Profile) Resolve(alias string) (Unit, error)
+    Resolve resolves exactly one alias without case or locale inference.
+
+type Quantity struct {
+	// Has unexported fields.
+}
+    Quantity is an immutable decimal amount with explicit unit identity.
+
+func MustNew(amount decimal.Decimal, unit Unit) Quantity
+    MustNew constructs a trusted quantity and panics for an unknown unit.
+
+func New(amount decimal.Decimal, unit Unit) (Quantity, error)
+    New validates unit and constructs an immutable quantity.
+
+func Parse(input string, profile Profile) (Quantity, error)
+    Parse parses strict amount-space-unit text under profile.
+
+func ParseQuantityXML(data []byte) (Quantity, error)
+    ParseQuantityXML parses one strict, byte-bounded quantity XML document.
+
+func (q Quantity) Add(other Quantity, conversion ConversionContext) (Quantity, error)
+    Add converts other into q's unit and returns their exact sum without caller
+    cancellation.
+
+func (q Quantity) AddContext(
+	ctx context.Context,
+	other Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    AddContext converts other into q's unit and returns their exact sum under
+    caller cancellation.
+
+func (q Quantity) Amount() decimal.Decimal
+    Amount returns the immutable decimal amount.
+
+func (q Quantity) Clamp(minimum, maximum Quantity, conversion ConversionContext) (Quantity, error)
+    Clamp restricts q to an inclusive compatible interval without caller
+    cancellation.
+
+func (q Quantity) ClampContext(
+	ctx context.Context,
+	minimum, maximum Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    ClampContext restricts q to an inclusive compatible interval under caller
+    cancellation.
+
+func (q Quantity) Compare(other Quantity, conversion ConversionContext) (int, error)
+    Compare converts other into q's unit and compares numeric amounts without
+    caller cancellation.
+
+func (q Quantity) CompareContext(ctx context.Context, other Quantity, conversion ConversionContext) (int, error)
+    CompareContext converts other into q's unit and compares numeric amounts
+    under caller cancellation.
+
+func (q Quantity) Convert(target Unit, conversion ConversionContext) (Quantity, error)
+    Convert converts q into target without caller cancellation.
+
+    Use ConvertContext when the operation belongs to a caller-owned context.
+
+func (q Quantity) ConvertContext(
+	ctx context.Context,
+	target Unit,
+	conversion ConversionContext,
+) (Quantity, error)
+    ConvertContext converts q into target under caller cancellation and an
+    explicit conversion policy.
+
+func (q Quantity) Dimension() (Dimension, error)
+    Dimension returns the unit's physical dimension.
+
+func (q Quantity) Divide(other Quantity, conversion ConversionContext) (Quantity, error)
+    Divide returns a supported canonical derived quantity without caller
+    cancellation.
+
+func (q Quantity) DivideContext(
+	ctx context.Context,
+	other Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    DivideContext returns a supported canonical derived quantity under caller
+    cancellation.
+
+func (q Quantity) Equal(other Quantity, conversion ConversionContext) (bool, error)
+    Equal reports numeric equality without caller cancellation.
+
+func (q Quantity) EqualContext(ctx context.Context, other Quantity, conversion ConversionContext) (bool, error)
+    EqualContext reports numeric equality after explicit compatible-unit
+    conversion under caller cancellation.
+
+func (q Quantity) Format(options FormatOptions) (string, error)
+    Format converts, rounds, and formats a quantity without caller cancellation.
+
+func (q Quantity) FormatContext(ctx context.Context, options FormatOptions) (string, error)
+    FormatContext converts, rounds, and formats a quantity under caller
+    cancellation and explicit options.
+
+func (q Quantity) MarshalJSON() ([]byte, error)
+    MarshalJSON encodes value and unit metadata with the decimal as a string.
+
+func (q Quantity) MarshalText() ([]byte, error)
+    MarshalText returns canonical amount-space-symbol text.
+
+func (q Quantity) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error
+    MarshalXML encodes value and unit metadata without numeric narrowing.
+
+func (q Quantity) Multiply(other Quantity, conversion ConversionContext) (Quantity, error)
+    Multiply returns a supported canonical derived quantity without caller
+    cancellation.
+
+func (q Quantity) MultiplyContext(
+	ctx context.Context,
+	other Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    MultiplyContext returns a supported canonical derived quantity under caller
+    cancellation.
+
+func (q Quantity) Round(scale int32, mode decimal.RoundingMode) (Quantity, error)
+    Round quantizes q at scale fractional places without caller cancellation.
+
+func (q Quantity) RoundContext(
+	ctx context.Context,
+	scale int32,
+	mode decimal.RoundingMode,
+) (Quantity, error)
+    RoundContext quantizes q at scale fractional places under caller
+    cancellation.
+
+func (q *Quantity) Scan(source any) error
+    Scan reads lossless JSON text from a SQL driver.
+
+func (q Quantity) String() string
+
+func (q Quantity) Subtract(other Quantity, conversion ConversionContext) (Quantity, error)
+    Subtract converts other into q's unit and returns their exact difference
+    without caller cancellation.
+
+func (q Quantity) SubtractContext(
+	ctx context.Context,
+	other Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    SubtractContext converts other into q's unit and returns their exact
+    difference under caller cancellation.
+
+func (q Quantity) Times(count uint64) (Quantity, error)
+    Times multiplies an amount by a bounded positive package count without
+    caller cancellation.
+
+func (q Quantity) TimesContext(ctx context.Context, count uint64) (Quantity, error)
+    TimesContext multiplies an amount by a bounded positive package count under
+    caller cancellation.
+
+func (q Quantity) Unit() Unit
+    Unit returns the quantity's unit identity.
+
+func (q *Quantity) UnmarshalJSON(data []byte) error
+    UnmarshalJSON decodes one bounded strict quantity object.
+
+func (q *Quantity) UnmarshalText(text []byte) error
+    UnmarshalText parses canonical text with SymbolProfile.
+
+func (q *Quantity) UnmarshalXML(_ *xml.Decoder, _ xml.StartElement) error
+    UnmarshalXML fails closed because encoding/xml invokes this callback only
+    after its caller-owned decoder has parsed and allocated the start token.
+    Use ParseQuantityXML for byte-bounded XML input.
+
+func (q Quantity) Value() (driver.Value, error)
+    Value stores a quantity as lossless JSON text suitable for SQL text or JSON
+    columns.
+
+type StackingFactor struct {
+	// Has unexported fields.
+}
+    StackingFactor is the positive number of equivalent floor positions shared
+    by stacked packages. One means not stackable.
+
+func NewStackingFactor(factor decimal.Decimal) (StackingFactor, error)
+    NewStackingFactor validates a positive stacking divisor.
+
+func (s StackingFactor) Decimal() decimal.Decimal
+    Decimal returns the exact stacking factor.
+
+type TruckWidth struct {
+	// Has unexported fields.
+}
+    TruckWidth is a validated positive vehicle interior width.
+
+func NewTruckWidth(width Quantity) (TruckWidth, error)
+    NewTruckWidth validates a positive length quantity.
+
+func (t TruckWidth) Quantity() Quantity
+    Quantity returns the configured width quantity.
+
+type Unit string
+    Unit is a stable identity for a supported measurement unit.
+
+const (
+	// One is the canonical dimensionless unit.
+	One Unit = "1"
+
+	Millimetre Unit = "mm"
+	Centimetre Unit = "cm"
+	Metre      Unit = "m"
+	Kilometre  Unit = "km"
+	Inch       Unit = "in"
+	Foot       Unit = "ft"
+	Yard       Unit = "yd"
+
+	SquareMillimetre Unit = "mm2"
+	SquareCentimetre Unit = "cm2"
+	SquareMetre      Unit = "m2"
+	SquareInch       Unit = "in2"
+	SquareFoot       Unit = "ft2"
+
+	CubicMillimetre Unit = "mm3"
+	CubicCentimetre Unit = "cm3"
+	CubicMetre      Unit = "m3"
+	Millilitre      Unit = "mL"
+	Litre           Unit = "L"
+	CubicInch       Unit = "in3"
+	CubicFoot       Unit = "ft3"
+
+	Milligram Unit = "mg"
+	Gram      Unit = "g"
+	Kilogram  Unit = "kg"
+	Tonne     Unit = "t"
+	Ounce     Unit = "oz"
+	Pound     Unit = "lb"
+
+	Kelvin     Unit = "K"
+	Celsius    Unit = "degC"
+	Fahrenheit Unit = "degF"
+
+	KilogramPerCubicMetre  Unit = "kg/m3"
+	GramPerCubicCentimetre Unit = "g/cm3"
+
+	LoadingMetre Unit = "ldm"
+)
+    Supported units carry stable symbols and dimension identity.
+
+func Units(dimension Dimension) []Unit
+    Units returns a sorted copy of every supported unit for dimension.
+
+func (u Unit) Dimension() (Dimension, error)
+    Dimension reports the unit's physical dimension.
+
+func (u Unit) String() string
+
+type VolumetricDivisor struct {
+	// Has unexported fields.
+}
+    VolumetricDivisor is a positive volume-per-kilogram carrier input with an
+    explicit volume unit, for example 5000 cm3/kg.
+
+func NewVolumetricDivisor(volumePerKilogram decimal.Decimal, volumeUnit Unit) (VolumetricDivisor, error)
+    NewVolumetricDivisor validates a positive volume-per-kilogram divisor.
+
+func (d VolumetricDivisor) VolumePerKilogram() decimal.Decimal
+    VolumePerKilogram returns the exact divisor amount.
+
+func (d VolumetricDivisor) VolumeUnit() Unit
+    VolumeUnit returns the divisor's explicit volume unit.
+
+func (d VolumetricDivisor) Weight(volume Quantity, conversion ConversionContext) (Quantity, error)
+    Weight calculates dimensional weight in kilograms without caller
+    cancellation.
+
+func (d VolumetricDivisor) WeightContext(
+	ctx context.Context,
+	volume Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    WeightContext calculates dimensional weight in kilograms under caller
+    cancellation.
+
+type VolumetricIndex struct {
+	// Has unexported fields.
+}
+    VolumetricIndex is a positive mass-per-volume factor, usually expressed as
+    kilograms per cubic metre.
+
+func NewVolumetricIndex(density Quantity) (VolumetricIndex, error)
+    NewVolumetricIndex validates a positive density quantity.
+
+func (i VolumetricIndex) Density() Quantity
+    Density returns the configured mass-per-volume quantity.
+
+func (i VolumetricIndex) Weight(volume Quantity, conversion ConversionContext) (Quantity, error)
+    Weight multiplies the index by a volume and returns canonical kilograms
+    without caller cancellation.
+
+func (i VolumetricIndex) WeightContext(
+	ctx context.Context,
+	volume Quantity,
+	conversion ConversionContext,
+) (Quantity, error)
+    WeightContext multiplies the index by a volume and returns canonical
+    kilograms under caller cancellation.
+
+package measurementwire // import "github.com/faustbrian/go-measurement/v2/adapters/wire"
+
+Package measurementwire adapts Quantity to bounded wire JSON and XML codecs
+while preserving decimal and unit metadata.
+
+FUNCTIONS
+
+func Decode(payload []byte, format wire.Format, options Options) (measurement.Quantity, error)
+    Decode parses exactly one bounded quantity document in an explicitly
+    selected supported format. The returned Quantity does not retain payload.
+
+func Encode(quantity measurement.Quantity, format wire.Format, options Options) ([]byte, error)
+    Encode serializes quantity in an explicitly selected supported format.
+
+
+TYPES
+
+type Options struct {
+	MaxBytes int64
+}
+    Options bounds encoded and decoded documents. Zero values retain the
+    selected wire codec's defaults. XML decoding also enforces measurement's
+    smaller core document ceiling.
+
+package measurementwire // import "github.com/faustbrian/go-measurement/v2/measurementwire"
+
+Package measurementwire is the compatibility facade for the bounded measurement
+wire adapter.
+
+Deprecated: use github.com/faustbrian/go-measurement/v2/adapters/wire,
+introduced in v1.1.0 with the same Options, Encode, and Decode usage.
+The earliest permitted removal is a future major release and never before
+2027-03-08.
+
+FUNCTIONS
+
+func Decode(payload []byte, format wire.Format, options Options) (measurement.Quantity, error)
+    Decode parses exactly one bounded quantity document in an explicitly
+    selected supported format.
+
+func Encode(quantity measurement.Quantity, format wire.Format, options Options) ([]byte, error)
+    Encode serializes quantity in an explicitly selected supported format.
+
+
+TYPES
+
+type Options struct {
+	MaxBytes int64
+}
+    Options bounds encoded and decoded documents. XML decoding also enforces
+    measurement's smaller core document ceiling. Options remains a distinct
+    named compatibility type so reflection-based consumers retain the legacy
+    package identity.

@@ -1,13 +1,14 @@
 package measurement_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"testing"
 
 	"github.com/faustbrian/go-math/decimal"
-	measurement "github.com/faustbrian/go-measurement"
+	measurement "github.com/faustbrian/go-measurement/v2"
 )
 
 func TestQuantityJSONPreservesDecimalAndUnitMetadata(t *testing.T) {
@@ -54,9 +55,8 @@ func TestQuantityCodecsRejectAmbiguousFields(t *testing.T) {
 		`<quantity><value>1</value><unit>m</unit><unknown>x</unknown></quantity>`,
 	}
 	for _, payload := range xmlPayloads {
-		var quantity measurement.Quantity
-		if err := xml.Unmarshal([]byte(payload), &quantity); !errors.Is(err, measurement.ErrInvalidQuantity) {
-			t.Fatalf("xml.Unmarshal(%s) error = %v, want ErrInvalidQuantity", payload, err)
+		if _, err := measurement.ParseQuantityXML([]byte(payload)); !errors.Is(err, measurement.ErrInvalidQuantity) {
+			t.Fatalf("ParseQuantityXML(%s) error = %v, want ErrInvalidQuantity", payload, err)
 		}
 	}
 }
@@ -73,9 +73,9 @@ func TestQuantityXMLPreservesDecimalAndUnitMetadata(t *testing.T) {
 		t.Fatalf("Marshal() = %s, want %s", got, want)
 	}
 
-	var decoded measurement.Quantity
-	if err := xml.Unmarshal(data, &decoded); err != nil {
-		t.Fatalf("Unmarshal() error = %v", err)
+	decoded, err := measurement.ParseQuantityXML(data)
+	if err != nil {
+		t.Fatalf("ParseQuantityXML() error = %v", err)
 	}
 	if got := decoded.String(); got != original.String() {
 		t.Fatalf("round trip = %q, want %q", got, original)
@@ -100,6 +100,30 @@ func TestQuantitySQLValueAndScannerRoundTrip(t *testing.T) {
 	if err := decoded.Scan(123); !errors.Is(err, measurement.ErrInvalidQuantity) {
 		t.Fatalf("Scan(int) error = %v", err)
 	}
+}
+
+func TestQuantitySQLScannerRejectsOversizeBeforeCopy(t *testing.T) {
+	oversize := bytes.Repeat([]byte(" "), measurement.MaxSerializedBytes+1)
+	assertRejected := func(t *testing.T, source any) {
+		t.Helper()
+
+		var decoded measurement.Quantity
+		allocations := testing.AllocsPerRun(10, func() {
+			if err := decoded.Scan(source); !errors.Is(err, measurement.ErrInvalidQuantity) {
+				t.Fatalf("Scan() error = %v, want ErrInvalidQuantity", err)
+			}
+		})
+		if allocations > 2 {
+			t.Fatalf("Scan() allocations = %.0f, want at most 2 before rejecting oversized input", allocations)
+		}
+	}
+
+	t.Run("bytes", func(t *testing.T) {
+		assertRejected(t, oversize)
+	})
+	t.Run("string", func(t *testing.T) {
+		assertRejected(t, string(oversize))
+	})
 }
 
 func TestFormatRequiresExplicitTargetAndRounding(t *testing.T) {
@@ -151,9 +175,9 @@ func TestDimensionsJSONAndXMLRoundTripAllUnits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("XML Marshal() error = %v", err)
 	}
-	var fromXML measurement.Dimensions
-	if err := xml.Unmarshal(xmlData, &fromXML); err != nil {
-		t.Fatalf("XML Unmarshal() error = %v", err)
+	fromXML, err := measurement.ParseDimensionsXML(xmlData)
+	if err != nil {
+		t.Fatalf("ParseDimensionsXML() error = %v", err)
 	}
 	if fromXML.Length().String() != "1.2 m" || fromXML.Width().String() != "80 cm" ||
 		fromXML.Height().String() != "600 mm" || fromXML.Quantity() != 2 {
@@ -185,9 +209,8 @@ func TestDimensionsCodecsRejectAmbiguousFields(t *testing.T) {
 		`<dimensions><length><value>1</value><unit>m</unit></length><width><value>1</value><unit>m</unit></width><height><value>1</value><unit>m</unit></height><quantity>1</quantity><unknown>x</unknown></dimensions>`,
 	}
 	for _, payload := range xmlPayloads {
-		var dimensions measurement.Dimensions
-		if err := xml.Unmarshal([]byte(payload), &dimensions); !errors.Is(err, measurement.ErrInvalidQuantity) {
-			t.Fatalf("xml.Unmarshal(%s) error = %v, want ErrInvalidQuantity", payload, err)
+		if _, err := measurement.ParseDimensionsXML([]byte(payload)); !errors.Is(err, measurement.ErrInvalidQuantity) {
+			t.Fatalf("ParseDimensionsXML(%s) error = %v, want ErrInvalidQuantity", payload, err)
 		}
 	}
 }

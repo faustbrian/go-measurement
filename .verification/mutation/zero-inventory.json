@@ -7,7 +7,7 @@
       "module_directory": ".",
       "package_directory": "measurementwire",
       "reason": "The deprecated facade contains a distinct named options type and direct successor delegations only; the complete enabled Gremlins operator set discovers no viable transformations.",
-      "source_digest": "1c43a7d474dbf879025c0cb65e0c44c35a6f12c9db04d37a53e6e49cd8b41842"
+      "source_digest": "81f31f1fbbf7f728fd6e54d403cde453d0e901d2745acc83fed6189bb6fd88aa"
     }
   ]
 }

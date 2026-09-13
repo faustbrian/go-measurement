@@ -2,11 +2,11 @@ package measurement
 
 import "fmt"
 
-// Dimension is a closed v1 physical-dimension identity. Loading metre has a
+// Dimension is a closed physical-dimension identity. Loading metre has a
 // distinct semantic identity even though its displayed unit contains metres.
 type Dimension uint8
 
-// Supported dimensions form the closed v1 physical ontology.
+// Supported dimensions form the closed physical ontology.
 const (
 	// Dimensionless identifies ratios and counts with unit one.
 	Dimensionless Dimension = iota

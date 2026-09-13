@@ -2,11 +2,12 @@ package measurementwire_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/faustbrian/go-math/decimal"
-	measurement "github.com/faustbrian/go-measurement"
-	measurementwire "github.com/faustbrian/go-measurement/adapters/wire"
+	measurement "github.com/faustbrian/go-measurement/v2"
+	measurementwire "github.com/faustbrian/go-measurement/v2/adapters/wire"
 	"github.com/faustbrian/go-wire"
 )
 
@@ -62,6 +63,20 @@ func TestAdapterRejectsUnsupportedFormatsAndOversizePayloads(t *testing.T) {
 	if _, err := measurementwire.Decode([]byte(`{"value":"1","unit":"m"}`), wire.FormatJSON, measurementwire.Options{MaxBytes: 4}); !errors.Is(err, wire.ErrSizeLimit) {
 		t.Fatalf("Decode(oversize) error = %v", err)
 	}
+	if _, err := measurementwire.Decode([]byte(`<quantity/>`), wire.FormatXML, measurementwire.Options{MaxBytes: 4}); !errors.Is(err, wire.ErrSizeLimit) {
+		t.Fatalf("Decode(XML oversize) error = %v", err)
+	}
+	if _, err := measurementwire.Decode([]byte(`<quantity/>`), wire.FormatXML, measurementwire.Options{MaxBytes: -1}); !errors.Is(err, wire.ErrValidation) {
+		t.Fatalf("Decode(XML negative limit) error = %v", err)
+	}
+	coreOversize := []byte(
+		`<quantity><value>` +
+			strings.Repeat("9", measurement.MaxSerializedBytes) +
+			`</value><unit>m</unit></quantity>`,
+	)
+	if _, err := measurementwire.Decode(coreOversize, wire.FormatXML, measurementwire.Options{MaxBytes: int64(len(coreOversize))}); !errors.Is(err, wire.ErrValidation) || !errors.Is(err, measurement.ErrInvalidQuantity) {
+		t.Fatalf("Decode(XML core limit) error = %v", err)
+	}
 }
 
 func TestDecodeDoesNotRetainCallerPayload(t *testing.T) {
@@ -75,5 +90,21 @@ func TestDecodeDoesNotRetainCallerPayload(t *testing.T) {
 	clear(payload)
 	if decoded.String() != "4.50 kg" {
 		t.Fatalf("decoded quantity after caller mutation = %q", decoded)
+	}
+}
+
+func TestXMLDecodeUsesBoundedDefault(t *testing.T) {
+	t.Parallel()
+
+	decoded, err := measurementwire.Decode(
+		[]byte(`<quantity><value>4.50</value><unit>kg</unit></quantity>`),
+		wire.FormatXML,
+		measurementwire.Options{},
+	)
+	if err != nil {
+		t.Fatalf("Decode() error = %v", err)
+	}
+	if got := decoded.String(); got != "4.50 kg" {
+		t.Fatalf("Decode() = %q, want %q", got, "4.50 kg")
 	}
 }

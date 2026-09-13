@@ -3,7 +3,7 @@
 `ErrUnknownUnit` means the unit is unsupported or absent from the selected
 profile. `ErrDimensionMismatch` means operands or formula inputs have different
 dimensions. `ErrUnsupportedDimension` means multiplication or division would
-leave the closed v1 ontology.
+leave the closed physical ontology.
 
 A shared `math` conversion error under `ExactConversion` means the quotient
 does not terminate in base ten; choose and document a rounded scale. An
@@ -11,6 +11,6 @@ does not terminate in base ten; choose and document a rounded scale. An
 limits, or an out-of-range scale was supplied.
 
 `ErrAffineArithmetic` means code attempted to add or subtract absolute
-temperatures. Model the intended interval outside v1. Serialization errors
+temperatures. Model the intended interval outside this package. Serialization errors
 usually indicate numeric JSON, unknown fields, a missing unit, malformed
 decimal text, trailing content, or a configured byte limit.
