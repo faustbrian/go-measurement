@@ -9,8 +9,81 @@ import (
 	"github.com/faustbrian/go-math/decimal"
 	measurement "github.com/faustbrian/go-measurement/v2"
 	measurementwire "github.com/faustbrian/go-measurement/v2/adapters/wire"
+
+	//lint:ignore SA1019 Verify the supported deprecated facade.
+	legacywire "github.com/faustbrian/go-measurement/v2/measurementwire" //nolint:staticcheck // Compatibility coverage.
 	"github.com/faustbrian/go-wire"
 )
+
+func TestPublicJSONDiagnosticsSanitizeTypedErrors(t *testing.T) {
+	t.Parallel()
+
+	payload := []byte(`{"value":true,"unit":"m"}`)
+	tests := []struct {
+		name string
+		call func() error
+		kind error
+	}{
+		{"JSON", func() error { return json.Unmarshal(payload, new(measurement.Quantity)) }, measurement.ErrInvalidQuantity},
+		{"SQL", func() error { return new(measurement.Quantity).Scan(payload) }, measurement.ErrInvalidQuantity},
+		{"wire", func() error {
+			_, err := measurementwire.Decode(payload, wire.FormatJSON, measurementwire.Options{})
+			return err
+		}, wire.ErrValidation},
+		{"legacy wire", func() error {
+			_, err := legacywire.Decode(payload, wire.FormatJSON, legacywire.Options{})
+			return err
+		}, wire.ErrValidation},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := test.call()
+			if !errors.Is(err, test.kind) {
+				t.Fatalf("error = %v, want %v", err, test.kind)
+			}
+			var typed *json.UnmarshalTypeError
+			if !errors.As(err, &typed) {
+				t.Fatalf("error = %v, want sanitized UnmarshalTypeError", err)
+			}
+			if typed.Value != "invalid value" {
+				t.Fatalf("typed error value = %q, want redacted value", typed.Value)
+			}
+		})
+	}
+
+	var syntax *json.SyntaxError
+	if err := new(measurement.Quantity).UnmarshalJSON([]byte(`{"value":"1","unit":"m"`)); errors.As(err, &syntax) {
+		t.Fatalf("syntax details escaped the public JSON decoder: %v", err)
+	}
+	for _, decode := range []struct {
+		name string
+		call func([]byte) error
+	}{
+		{"wire", func(payload []byte) error {
+			_, err := measurementwire.Decode(payload, wire.FormatJSON, measurementwire.Options{})
+			return err
+		}},
+		{"legacy wire", func(payload []byte) error {
+			_, err := legacywire.Decode(payload, wire.FormatJSON, legacywire.Options{})
+			return err
+		}},
+	} {
+		t.Run(decode.name+" syntax", func(t *testing.T) {
+			t.Parallel()
+
+			err := decode.call([]byte(`{"value":"private-marker"`))
+			if !errors.Is(err, wire.ErrParse) {
+				t.Fatalf("error = %v, want wire.ErrParse", err)
+			}
+			var syntax *json.SyntaxError
+			if errors.As(err, &syntax) || strings.Contains(err.Error(), "private-marker") {
+				t.Fatalf("wire syntax error exposed controlled input: %v", err)
+			}
+		})
+	}
+}
 
 func TestInputDiagnosticsDoNotEchoControlledValues(t *testing.T) {
 	t.Parallel()

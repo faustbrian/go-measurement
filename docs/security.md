@@ -39,6 +39,10 @@ owned behavior.
 - JSON, SQL, profile, and unit diagnostics preserve classification while using
   fixed reasons rather than echoing attacker-controlled field names, aliases,
   or unit values.
+- The standard library may reject malformed JSON before dispatching a custom
+  `UnmarshalJSON` method. Use the bounded package or wire entrypoint directly
+  for untrusted bytes; an outer `json.Unmarshal` error is caller-owned and must
+  not be logged without redaction.
 - Unit and dimensional validation happens before arithmetic. Nonpositive
   dimensions, truck widths, stacking factors, divisors, and indexes fail
   closed. Conversion contexts cannot infer rounding policy.
@@ -61,3 +65,4 @@ directly into `Quantity` or `Dimensions`.
 | --- | --- | --- | --- | --- |
 | Medium | Integrating application owner | `encoding/xml` parses the root start token before dispatching `UnmarshalXML`; this library cannot prevent allocation performed by that caller-owned decoder. Retaining the methods provides an explicit migration error instead of silently decoding through an unbounded callback. | Direct callbacks fail closed. Bound transport reads first and use `ParseQuantityXML`, `ParseDimensionsXML`, or `adapters/wire`. | Revisit if Go exposes a pre-token decoder limit, the callback methods can be removed in a future major version, or a supported adapter bypasses the bounded entrypoints. |
 | Medium | Integrating application owner | A SQL driver materializes a `string` or `[]byte` before invoking `Scan`, outside this package's control. | Apply database and driver response limits. `Scan` rejects oversized values before making its own copy or parsing JSON. | Revisit if supported drivers expose streaming or pre-materialization limits, or an adapter bypasses `Scan`. |
+| Medium | Integrating application owner | `encoding/json.Unmarshal` can reject malformed JSON before invoking `Quantity.UnmarshalJSON` or `Dimensions.UnmarshalJSON`, so the standard-library error is outside this package's redaction boundary. | Apply a transport byte limit and call the package's bounded `UnmarshalJSON` method or `adapters/wire.Decode` for untrusted payloads; log fixed error classes rather than raw outer decoder errors. | Revisit if Go adds a pre-validation redaction hook or a supported adapter returns an unsanitized outer error. |

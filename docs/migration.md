@@ -53,8 +53,25 @@ a smaller caller-defined byte limit. Apply a transport body limit before
 reading the payload into memory. This migration is required because an
 `encoding/xml.Unmarshaler` callback cannot bound allocation of the start token
 that the external decoder parses before invoking it.
+The adapter classifies malformed XML tokenization as `wire.ErrParse`, distinct
+from schema and value failures classified as `wire.ErrValidation`.
 
 The owned direct consumers `go-knapsack` (including its objective and
 reference modules) and `go-rule-engine/adapters/measurement` remain pinned to
 v1. Their migration and consumer verification are release-blocked until an
 actual v2 version exists.
+
+## Handle redacted JSON diagnostics
+
+The unpublished v2 source retains `errors.Is` classification while replacing
+attacker-controlled JSON diagnostic text. `errors.As` no longer exposes an
+underlying `json.SyntaxError` from package-owned decoding; a reachable
+`json.UnmarshalTypeError` is a sanitized copy whose `Value` is `invalid value`.
+Other typed fields may describe the decode location, but are not stable keys
+for logging, classification, or retries. Classify with the measurement or wire
+sentinels and log only fixed error classes.
+
+The standard library can reject malformed JSON before calling a type's
+`UnmarshalJSON` method. When accepting untrusted bytes, call the bounded
+`Quantity.UnmarshalJSON` or `adapters/wire.Decode` entrypoint directly and
+apply a transport limit before materializing the payload.

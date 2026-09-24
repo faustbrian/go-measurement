@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"reflect"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/faustbrian/go-math/decimal"
@@ -103,18 +106,22 @@ func TestQuantitySQLValueAndScannerRoundTrip(t *testing.T) {
 }
 
 func TestQuantitySQLScannerRejectsOversizeBeforeCopy(t *testing.T) {
-	oversize := bytes.Repeat([]byte(" "), measurement.MaxSerializedBytes+1)
+	oversize := bytes.Repeat([]byte(" "), 4<<20)
 	assertRejected := func(t *testing.T, source any) {
 		t.Helper()
 
 		var decoded measurement.Quantity
-		allocations := testing.AllocsPerRun(10, func() {
+		runtime.GC()
+		var before, after runtime.MemStats
+		runtime.ReadMemStats(&before)
+		for range 8 {
 			if err := decoded.Scan(source); !errors.Is(err, measurement.ErrInvalidQuantity) {
 				t.Fatalf("Scan() error = %v, want ErrInvalidQuantity", err)
 			}
-		})
-		if allocations > 2 {
-			t.Fatalf("Scan() allocations = %.0f, want at most 2 before rejecting oversized input", allocations)
+		}
+		runtime.ReadMemStats(&after)
+		if got := after.TotalAlloc - before.TotalAlloc; got > 1<<20 {
+			t.Fatalf("Scan() allocated %d bytes across eight oversized inputs, want at most 1 MiB", got)
 		}
 	}
 
@@ -124,6 +131,126 @@ func TestQuantitySQLScannerRejectsOversizeBeforeCopy(t *testing.T) {
 	t.Run("string", func(t *testing.T) {
 		assertRejected(t, string(oversize))
 	})
+}
+
+func TestQuantitySQLScannerAcceptsExactSerializedByteLimit(t *testing.T) {
+	t.Parallel()
+
+	const canonical = `{"value":"1","unit":"m"}`
+	payload := append(bytes.Repeat([]byte(" "), measurement.MaxSerializedBytes-len(canonical)), canonical...)
+	if len(payload) != measurement.MaxSerializedBytes {
+		t.Fatalf("fixture length = %d, want %d", len(payload), measurement.MaxSerializedBytes)
+	}
+
+	for _, test := range []struct {
+		name   string
+		source any
+	}{
+		{name: "bytes", source: payload},
+		{name: "string", source: string(payload)},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			var decoded measurement.Quantity
+			if err := decoded.Scan(test.source); err != nil {
+				t.Fatalf("Scan(exact byte limit) error = %v", err)
+			}
+			if got, want := decoded.String(), "1 m"; got != want {
+				t.Fatalf("Scan(exact byte limit) = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestDirectDecodersRejectOversizeDocumentsBeforeParsing(t *testing.T) {
+	t.Parallel()
+
+	oversize := bytes.Repeat([]byte(" "), measurement.MaxSerializedBytes+1)
+	tests := []struct {
+		name string
+		call func([]byte) error
+		want string
+	}{
+		{"quantity JSON", func(data []byte) error { return new(measurement.Quantity).UnmarshalJSON(data) }, "JSON exceeds"},
+		{"dimensions JSON", func(data []byte) error { return new(measurement.Dimensions).UnmarshalJSON(data) }, "JSON exceeds"},
+		{"quantity XML", func(data []byte) error { _, err := measurement.ParseQuantityXML(data); return err }, "document exceeds byte limit"},
+		{"dimensions XML", func(data []byte) error { _, err := measurement.ParseDimensionsXML(data); return err }, "document exceeds byte limit"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := test.call(oversize)
+			if !errors.Is(err, measurement.ErrInvalidQuantity) || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("decode(oversize malformed document) error = %v, want %q", err, test.want)
+			}
+		})
+	}
+}
+
+func TestFailedJSONAndSQLDecodesPreserveQuantityForRetry(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name  string
+		apply func(*measurement.Quantity, []byte) error
+	}{
+		{"JSON", func(q *measurement.Quantity, data []byte) error { return json.Unmarshal(data, q) }},
+		{"SQL bytes", func(q *measurement.Quantity, data []byte) error { return q.Scan(data) }},
+		{"SQL string", func(q *measurement.Quantity, data []byte) error { return q.Scan(string(data)) }},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			quantity := measurement.MustNew(decimal.New(9), measurement.Kilogram)
+			if err := test.apply(&quantity, []byte(`{"value":"2","unit":"unknown"}`)); !errors.Is(err, measurement.ErrUnknownUnit) {
+				t.Fatalf("invalid decode error = %v, want ErrUnknownUnit", err)
+			}
+			if got, want := quantity.String(), "9 kg"; got != want {
+				t.Fatalf("quantity after failed decode = %q, want %q", got, want)
+			}
+			if err := test.apply(&quantity, []byte(`{"value":"2","unit":"m"}`)); err != nil {
+				t.Fatalf("retry decode error = %v", err)
+			}
+			if got, want := quantity.String(), "2 m"; got != want {
+				t.Fatalf("quantity after retry = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestFailedDimensionsJSONDecodePreservesReceiverForRetry(t *testing.T) {
+	t.Parallel()
+
+	one := measurement.MustNew(decimal.New(1), measurement.Metre)
+	dimensions, err := measurement.NewDimensions(one, one, one, 2)
+	if err != nil {
+		t.Fatalf("NewDimensions() error = %v", err)
+	}
+	before := dimensions
+	if err := json.Unmarshal([]byte(`{"length":{"value":"2","unit":"m"}}`), &dimensions); err == nil {
+		t.Fatal("incomplete dimensions decoded successfully")
+	}
+	if !reflect.DeepEqual(dimensions, before) {
+		t.Fatal("failed dimensions decode mutated the existing receiver")
+	}
+
+	two := measurement.MustNew(decimal.New(2), measurement.Metre)
+	want, err := measurement.NewDimensions(two, two, two, 3)
+	if err != nil {
+		t.Fatalf("NewDimensions(retry) error = %v", err)
+	}
+	payload, err := json.Marshal(want)
+	if err != nil {
+		t.Fatalf("Marshal(retry) error = %v", err)
+	}
+	if err := json.Unmarshal(payload, &dimensions); err != nil {
+		t.Fatalf("retry dimensions decode error = %v", err)
+	}
+	if got := dimensions.Length().String(); got != "2 m" || dimensions.Quantity() != 3 {
+		t.Fatalf("dimensions after retry = %q x%d, want 2 m x3", got, dimensions.Quantity())
+	}
 }
 
 func TestFormatRequiresExplicitTargetAndRounding(t *testing.T) {

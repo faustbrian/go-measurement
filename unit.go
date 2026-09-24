@@ -12,7 +12,9 @@ import (
 // boundary failures.
 var (
 	// ErrInvalidQuantity reports malformed, nonpositive, or unbounded input.
-	ErrInvalidQuantity      = errors.New("measurement: invalid quantity")
+	ErrInvalidQuantity = errors.New("measurement: invalid quantity")
+	// ErrMalformedXML distinguishes XML tokenization failures from validation.
+	ErrMalformedXML         = errors.New("measurement: malformed XML")
 	ErrUnknownUnit          = errors.New("measurement: unknown unit")
 	ErrDimensionMismatch    = errors.New("measurement: dimension mismatch")
 	ErrUnsupportedDimension = errors.New("measurement: unsupported dimension")

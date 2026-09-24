@@ -334,7 +334,8 @@ func startXMLDocument(data []byte, root string) (*xml.Decoder, xml.StartElement,
 				return nil, xml.StartElement{}, nil, invalidXML("unexpected document text")
 			}
 		case xml.ProcInst:
-			if !declarationAllowed || value.Target != "xml" {
+			if !declarationAllowed || value.Target != "xml" ||
+				!bytes.Equal(value.Inst, []byte(`version="1.0"`)) {
 				return nil, xml.StartElement{}, nil, invalidXML("unsupported processing instruction")
 			}
 			declarationAllowed = false
@@ -352,7 +353,7 @@ func (b *xmlParseBudget) next(decoder *xml.Decoder) (xml.Token, error) {
 			return nil, io.EOF
 		}
 
-		return nil, invalidXML("malformed XML")
+		return nil, invalidXMLSyntax("malformed XML")
 	}
 	b.tokens++
 	switch token.(type) {
@@ -622,7 +623,7 @@ func sanitizeXMLValueError(err error) error {
 
 func normalizeXMLTokenError(err error) error {
 	if errors.Is(err, io.EOF) {
-		return invalidXML("unexpected end of XML document")
+		return invalidXMLSyntax("unexpected end of XML document")
 	}
 
 	return err
@@ -630,4 +631,8 @@ func normalizeXMLTokenError(err error) error {
 
 func invalidXML(reason string) error {
 	return fmt.Errorf("%w: %s", ErrInvalidQuantity, reason)
+}
+
+func invalidXMLSyntax(reason string) error {
+	return fmt.Errorf("%w: %w: %s", ErrInvalidQuantity, ErrMalformedXML, reason)
 }

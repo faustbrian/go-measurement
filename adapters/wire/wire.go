@@ -50,8 +50,12 @@ func Decode(payload []byte, format wire.Format, options Options) (measurement.Qu
 		if err = validateXMLSize(payload, options.MaxBytes); err == nil {
 			quantity, err = measurement.ParseQuantityXML(payload)
 			if err != nil {
+				kind := wire.ErrorKindValidation
+				if errors.Is(err, measurement.ErrMalformedXML) {
+					kind = wire.ErrorKindParse
+				}
 				err = &wire.Error{
-					Kind:   wire.ErrorKindValidation,
+					Kind:   kind,
 					Format: wire.FormatXML,
 					Op:     "decode",
 					Err:    err,

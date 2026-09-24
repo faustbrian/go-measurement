@@ -3,24 +3,35 @@ package measurement_test
 import (
 	"encoding/xml"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/faustbrian/go-math/decimal"
 	measurement "github.com/faustbrian/go-measurement/v2"
 )
 
 func TestDirectXMLUnmarshalFailsClosed(t *testing.T) {
 	t.Parallel()
+	quantity := measurement.MustNew(decimal.New(9), measurement.Kilogram)
+	length := measurement.MustNew(decimal.New(9), measurement.Metre)
+	dimensions, err := measurement.NewDimensions(length, length, length, 2)
+	if err != nil {
+		t.Fatalf("NewDimensions() error = %v", err)
+	}
+	beforeDimensions := dimensions
 
 	tests := []struct {
-		name    string
-		payload string
-		target  any
+		name      string
+		payload   string
+		target    any
+		unchanged func() bool
 	}{
 		{
-			name:    "quantity",
-			payload: `<quantity><value>12.50</value><unit>cm</unit></quantity>`,
-			target:  new(measurement.Quantity),
+			name:      "quantity",
+			payload:   `<quantity><value>12.50</value><unit>cm</unit></quantity>`,
+			target:    &quantity,
+			unchanged: func() bool { return quantity.String() == "9 kg" },
 		},
 		{
 			name: "dimensions",
@@ -30,7 +41,8 @@ func TestDirectXMLUnmarshalFailsClosed(t *testing.T) {
 				`<height><value>600</value><unit>mm</unit></height>` +
 				`<quantity>2</quantity>` +
 				`</dimensions>`,
-			target: new(measurement.Dimensions),
+			target:    &dimensions,
+			unchanged: func() bool { return reflect.DeepEqual(dimensions, beforeDimensions) },
 		},
 	}
 
@@ -42,6 +54,9 @@ func TestDirectXMLUnmarshalFailsClosed(t *testing.T) {
 			if !errors.Is(err, measurement.ErrInvalidQuantity) ||
 				!errors.Is(err, measurement.ErrUnboundedXML) {
 				t.Fatalf("xml.Unmarshal() error = %v, want ErrInvalidQuantity and ErrUnboundedXML", err)
+			}
+			if !test.unchanged() {
+				t.Fatal("raw XML failure mutated the existing receiver")
 			}
 		})
 	}
@@ -167,6 +182,15 @@ func TestBoundedXMLParsersRejectHostileWork(t *testing.T) {
 			payload: `<?target data?><quantity><value>1</value><unit>m</unit></quantity>`,
 		},
 		{
+			name:    "invalid XML pseudo declaration",
+			payload: `<?xml private-marker?><quantity><value>1</value><unit>m</unit></quantity>`,
+		},
+		{
+			name: "duplicate XML declaration",
+			payload: `<?xml version="1.0"?><?xml version="1.0"?>` +
+				`<quantity><value>1</value><unit>m</unit></quantity>`,
+		},
+		{
 			name:    "prologue text",
 			payload: `text<quantity><value>1</value><unit>m</unit></quantity>`,
 		},
@@ -211,6 +235,39 @@ func TestBoundedXMLParsersRejectHostileWork(t *testing.T) {
 				t.Fatalf("ParseQuantityXML() error = %v, want reason %q", err, test.wantReason)
 			}
 		})
+	}
+}
+
+func TestXMLScalarLimitsDistinguishBoundaryFromSemanticFailure(t *testing.T) {
+	t.Parallel()
+
+	unitDocument := func(unit string) []byte {
+		return []byte(`<quantity><value>1</value><unit>` + unit + `</unit></quantity>`)
+	}
+	if _, err := measurement.ParseQuantityXML(unitDocument(strings.Repeat("x", measurement.MaxAliasBytes))); !errors.Is(err, measurement.ErrUnknownUnit) {
+		t.Fatalf("exact-limit unknown unit error = %v, want ErrUnknownUnit", err)
+	}
+	if _, err := measurement.ParseQuantityXML(unitDocument(strings.Repeat("x", measurement.MaxAliasBytes+1))); !errors.Is(err, measurement.ErrInvalidQuantity) || !strings.Contains(err.Error(), "field exceeds byte limit") {
+		t.Fatalf("over-limit unit error = %v, want byte-limit rejection", err)
+	}
+
+	dimensionsDocument := func(count string) []byte {
+		return []byte(`<dimensions>` +
+			`<length><value>1</value><unit>m</unit></length>` +
+			`<width><value>1</value><unit>m</unit></width>` +
+			`<height><value>1</value><unit>m</unit></height>` +
+			`<quantity>` + count + `</quantity></dimensions>`)
+	}
+	exactCount := strings.Repeat("0", 19) + "1"
+	dimensions, err := measurement.ParseDimensionsXML(dimensionsDocument(exactCount))
+	if err != nil {
+		t.Fatalf("exact 20-byte package count error = %v", err)
+	}
+	if dimensions.Quantity() != 1 {
+		t.Fatalf("exact 20-byte package count = %d, want 1", dimensions.Quantity())
+	}
+	if _, err := measurement.ParseDimensionsXML(dimensionsDocument("0" + exactCount)); !errors.Is(err, measurement.ErrInvalidQuantity) || !strings.Contains(err.Error(), "field exceeds byte limit") {
+		t.Fatalf("over-limit package count error = %v, want byte-limit rejection", err)
 	}
 }
 

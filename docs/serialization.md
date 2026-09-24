@@ -17,9 +17,14 @@ duplicate fields, unsupported units, invalid decimals, and documents beyond
 
 `ParseQuantityXML` and `ParseDimensionsXML` enforce `MaxSerializedBytes`, the
 fixed schema depth and field counts, a token ceiling, and scalar-field limits.
-They reject attributes, namespaces, comments, directives, processing
+They accept only the canonical optional `<?xml version="1.0"?>` declaration.
+They reject attributes, namespaces, comments, directives, other processing
 instructions, CDATA, references, duplicate or unknown fields, nested scalar
 content, and trailing documents. Errors do not echo attacker-controlled XML.
+Malformed XML tokenization and premature EOF additionally match
+`ErrMalformedXML` while retaining `ErrInvalidQuantity`. The wire adapter maps
+those syntax failures to `wire.ErrParse`; schema and value errors match
+`wire.ErrValidation`.
 
 `Quantity.UnmarshalXML` and `Dimensions.UnmarshalXML` now fail closed with
 `ErrUnboundedXML`. `encoding/xml` parses a start token before invoking those

@@ -63,6 +63,7 @@
         "github.com/faustbrian/go-knapsack",
         "github.com/faustbrian/go-knapsack/integration/references",
         "github.com/faustbrian/go-knapsack/objective/gomoney",
+        "github.com/faustbrian/go-knapsack/objective/money",
         "github.com/faustbrian/go-rule-engine/adapters/measurement"
       ],
       "external_runtime_dependencies": [],
@@ -108,7 +109,7 @@
           "github.com/faustbrian/go-measurement/v2/adapters/wire": "Use for bounded JSON and XML encoding or decoding through the Golib wire contracts.",
           "github.com/faustbrian/go-measurement/v2/measurementwire": "Deprecated compatibility path for bounded wire encoding; use adapters/wire."
         },
-        "lifecycle_status": "active",
+        "lifecycle_status": "planned",
         "maturity": "preview",
         "construction_styles": [
           "must-helper",
