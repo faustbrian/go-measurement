@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/faustbrian/go-math/decimal"
-	measurement "github.com/faustbrian/go-measurement"
-	measurementwire "github.com/faustbrian/go-measurement/adapters/wire"
-	legacywire "github.com/faustbrian/go-measurement/measurementwire"
+	measurement "github.com/faustbrian/go-measurement/v2"
+	measurementwire "github.com/faustbrian/go-measurement/v2/adapters/wire"
+	legacywire "github.com/faustbrian/go-measurement/v2/measurementwire"
 	"github.com/faustbrian/go-wire"
 )
 
@@ -49,10 +49,10 @@ func TestWireSuccessorPreservesBoundedSerializationContract(t *testing.T) {
 func TestLegacyWireRemainsDistinctDelegatingCompatibilityFacade(t *testing.T) {
 	t.Parallel()
 
-	if got := reflect.TypeOf(legacywire.Options{}).PkgPath(); got != "github.com/faustbrian/go-measurement/measurementwire" {
+	if got := reflect.TypeOf(legacywire.Options{}).PkgPath(); got != "github.com/faustbrian/go-measurement/v2/measurementwire" {
 		t.Fatalf("legacy Options package = %q", got)
 	}
-	if got := reflect.TypeOf(measurementwire.Options{}).PkgPath(); got != "github.com/faustbrian/go-measurement/adapters/wire" {
+	if got := reflect.TypeOf(measurementwire.Options{}).PkgPath(); got != "github.com/faustbrian/go-measurement/v2/adapters/wire" {
 		t.Fatalf("successor Options package = %q", got)
 	}
 

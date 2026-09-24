@@ -1,20 +1,22 @@
 // Package measurementwire is the compatibility facade for the bounded
 // measurement wire adapter.
 //
-// Deprecated: use github.com/faustbrian/go-measurement/adapters/wire,
+// Deprecated: use github.com/faustbrian/go-measurement/v2/adapters/wire,
 // introduced in v1.1.0 with the same Options, Encode, and Decode usage. The
-// earliest permitted removal is v2.0.0 and never before 2027-03-08.
+// earliest permitted removal is a future major release and never before
+// 2027-03-08.
 package measurementwire
 
 import (
-	measurement "github.com/faustbrian/go-measurement"
-	adapter "github.com/faustbrian/go-measurement/adapters/wire"
+	measurement "github.com/faustbrian/go-measurement/v2"
+	adapter "github.com/faustbrian/go-measurement/v2/adapters/wire"
 	"github.com/faustbrian/go-wire"
 )
 
-// Options bounds encoded and decoded documents. It remains a distinct named
-// compatibility type so reflection-based consumers retain the legacy package
-// identity.
+// Options bounds encoded and decoded documents. XML decoding also enforces
+// measurement's smaller core document ceiling. Options remains a distinct
+// named compatibility type so reflection-based consumers retain the legacy
+// package identity.
 type Options struct {
 	MaxBytes int64
 }

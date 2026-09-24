@@ -460,19 +460,17 @@ func TestInternalEncodingFailurePaths(t *testing.T) {
 		t.Fatalf("malformed dimensions XML error = %v", err)
 	}
 	invalidDimensionsXML := `<dimensions><length><value>1</value><unit>m</unit></length><width><value>1</value><unit>m</unit></width><height><value>1</value><unit>m</unit></height><quantity>0</quantity></dimensions>`
-	if err := xml.Unmarshal([]byte(invalidDimensionsXML), &dimensions); !errors.Is(err, ErrInvalidQuantity) {
+	if _, err := ParseDimensionsXML([]byte(invalidDimensionsXML)); !errors.Is(err, ErrInvalidQuantity) {
 		t.Fatalf("invalid dimensions XML error = %v", err)
 	}
 }
 
 func TestInternalStrictCodecTokenPaths(t *testing.T) {
 	t.Parallel()
-	start := xml.StartElement{Name: xml.Name{Local: "quantity"}}
-	if _, err := decodeQuantityXML(xml.NewDecoder(strings.NewReader("")), start); !errors.Is(err, ErrInvalidQuantity) {
+	if _, err := ParseQuantityXML(nil); !errors.Is(err, ErrInvalidQuantity) {
 		t.Fatalf("empty quantity token stream error = %v", err)
 	}
-	start.Name.Local = "dimensions"
-	if _, err := decodeDimensionsXML(xml.NewDecoder(strings.NewReader("")), start); !errors.Is(err, ErrInvalidQuantity) {
+	if _, err := ParseDimensionsXML(nil); !errors.Is(err, ErrInvalidQuantity) {
 		t.Fatalf("empty dimensions token stream error = %v", err)
 	}
 
@@ -495,13 +493,8 @@ func TestInternalStrictCodecTokenPaths(t *testing.T) {
 		`<quantity><value>1`,
 		`<quantity><value>1</value><unit>m`,
 	} {
-		var quantity Quantity
-		err := xml.Unmarshal([]byte(payload), &quantity)
-		if strings.Contains(payload, "accepted") {
-			if err != nil {
-				t.Fatalf("quantity XML comment error = %v", err)
-			}
-		} else if !errors.Is(err, ErrInvalidQuantity) {
+		_, err := ParseQuantityXML([]byte(payload))
+		if !errors.Is(err, ErrInvalidQuantity) {
 			t.Fatalf("quantity XML %q error = %v", payload, err)
 		}
 	}
@@ -514,15 +507,52 @@ func TestInternalStrictCodecTokenPaths(t *testing.T) {
 		`<dimensions><length><value>1`,
 		`<dimensions><quantity>bad</quantity></dimensions>`,
 	} {
-		var dimensions Dimensions
-		err := xml.Unmarshal([]byte(payload), &dimensions)
-		if strings.Contains(payload, "accepted") {
-			if err != nil {
-				t.Fatalf("dimensions XML comment error = %v", err)
-			}
-		} else if !errors.Is(err, ErrInvalidQuantity) {
+		_, err := ParseDimensionsXML([]byte(payload))
+		if !errors.Is(err, ErrInvalidQuantity) {
 			t.Fatalf("dimensions XML %q error = %v", payload, err)
 		}
+	}
+}
+
+func TestXMLParseBudgetRejectsExcessDepthAndTokens(t *testing.T) {
+	t.Parallel()
+
+	depthDecoder := xml.NewDecoder(strings.NewReader(`<a><b><c><d/></c></b></a>`))
+	depthBudget := &xmlParseBudget{}
+	for {
+		_, err := depthBudget.next(depthDecoder)
+		if err == nil {
+			continue
+		}
+		if !errors.Is(err, ErrInvalidQuantity) || !strings.Contains(err.Error(), "depth limit") {
+			t.Fatalf("depth budget error = %v", err)
+		}
+		break
+	}
+
+	tokenDecoder := xml.NewDecoder(strings.NewReader(strings.Repeat(`<x/>`, MaxXMLTokens+1)))
+	tokenBudget := &xmlParseBudget{}
+	for range MaxXMLTokens {
+		if _, err := tokenBudget.next(tokenDecoder); err != nil {
+			t.Fatalf("token at limit error = %v", err)
+		}
+	}
+	if _, err := tokenBudget.next(tokenDecoder); !errors.Is(err, ErrInvalidQuantity) || !strings.Contains(err.Error(), "token limit") {
+		t.Fatalf("token beyond limit error = %v", err)
+	}
+
+	textDecoder := xml.NewDecoder(strings.NewReader(`<value>12<![CDATA[34]]></value>`))
+	startToken, err := textDecoder.Token()
+	if err != nil {
+		t.Fatalf("text start token error = %v", err)
+	}
+	start, ok := startToken.(xml.StartElement)
+	if !ok {
+		t.Fatalf("text start token = %T", startToken)
+	}
+	_, err = decodeXMLText(textDecoder, start, &xmlParseBudget{tokens: 1, depth: 1}, 3)
+	if !errors.Is(err, ErrInvalidQuantity) || !strings.Contains(err.Error(), "field exceeds byte limit") {
+		t.Fatalf("decodeXMLText(split overflow) error = %v", err)
 	}
 }
 

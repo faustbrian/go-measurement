@@ -30,3 +30,48 @@ converted, err := quantity.ConvertContext(ctx, target, conversion)
 Keep passing `ConversionContext` separately; it owns arithmetic precision,
 rounding, and limits, not cancellation. There is no required migration for
 callers that intentionally retain the detached v1 behavior.
+
+## Replace raw XML unmarshalling
+
+This migration targets the unpublished
+`github.com/faustbrian/go-measurement/v2` module. Existing consumers must stay
+on released v1 until v2 is published; do not add a replace directive or a
+pseudo-version to bypass that release boundary. After publication, update the
+module import path before adopting the new XML entrypoints.
+
+Raw `encoding/xml.Unmarshal` and `Decoder.Decode` calls targeting `Quantity`
+or `Dimensions` now fail with `ErrUnboundedXML`. Replace them with the bounded
+entrypoint matching the document root:
+
+```go
+quantity, err := measurement.ParseQuantityXML(payload)
+dimensions, err := measurement.ParseDimensionsXML(payload)
+```
+
+Use `adapters/wire.Decode` when the caller also needs wire-format selection and
+a smaller caller-defined byte limit. Apply a transport body limit before
+reading the payload into memory. This migration is required because an
+`encoding/xml.Unmarshaler` callback cannot bound allocation of the start token
+that the external decoder parses before invoking it.
+The adapter classifies malformed XML tokenization as `wire.ErrParse`, distinct
+from schema and value failures classified as `wire.ErrValidation`.
+
+The owned direct consumers `go-knapsack` (including its objective and
+reference modules) and `go-rule-engine/adapters/measurement` remain pinned to
+v1. Their migration and consumer verification are release-blocked until an
+actual v2 version exists.
+
+## Handle redacted JSON diagnostics
+
+The unpublished v2 source retains `errors.Is` classification while replacing
+attacker-controlled JSON diagnostic text. `errors.As` no longer exposes an
+underlying `json.SyntaxError` from package-owned decoding; a reachable
+`json.UnmarshalTypeError` is a sanitized copy whose `Value` is `invalid value`.
+Other typed fields may describe the decode location, but are not stable keys
+for logging, classification, or retries. Classify with the measurement or wire
+sentinels and log only fixed error classes.
+
+The standard library can reject malformed JSON before calling a type's
+`UnmarshalJSON` method. When accepting untrusted bytes, call the bounded
+`Quantity.UnmarshalJSON` or `adapters/wire.Decode` entrypoint directly and
+apply a transport limit before materializing the payload.

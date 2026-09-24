@@ -8,15 +8,21 @@ import (
 	"github.com/faustbrian/go-math/decimal"
 )
 
-// Package errors classify validation, unit, dimension, and context failures.
+// Package errors classify validation, unit, dimension, context, and parser
+// boundary failures.
 var (
 	// ErrInvalidQuantity reports malformed, nonpositive, or unbounded input.
-	ErrInvalidQuantity      = errors.New("measurement: invalid quantity")
+	ErrInvalidQuantity = errors.New("measurement: invalid quantity")
+	// ErrMalformedXML distinguishes XML tokenization failures from validation.
+	ErrMalformedXML         = errors.New("measurement: malformed XML")
 	ErrUnknownUnit          = errors.New("measurement: unknown unit")
 	ErrDimensionMismatch    = errors.New("measurement: dimension mismatch")
 	ErrUnsupportedDimension = errors.New("measurement: unsupported dimension")
 	ErrAffineArithmetic     = errors.New("measurement: affine temperature arithmetic")
 	ErrInvalidContext       = errors.New("measurement: invalid conversion context")
+	// ErrUnboundedXML reports use of encoding/xml's callback API, which cannot
+	// impose a byte limit before the decoder allocates the current token.
+	ErrUnboundedXML = errors.New("measurement: unbounded XML decoder")
 )
 
 // Unit is a stable identity for a supported measurement unit.
@@ -132,7 +138,7 @@ var canonicalUnits = map[Dimension]Unit{
 func (u Unit) Dimension() (Dimension, error) {
 	definition, ok := unitDefinitions[u]
 	if !ok {
-		return Dimensionless, fmt.Errorf("%w: %q", ErrUnknownUnit, u)
+		return Dimensionless, fmt.Errorf("%w: unsupported unit", ErrUnknownUnit)
 	}
 
 	return definition.dimension, nil
@@ -141,7 +147,7 @@ func (u Unit) Dimension() (Dimension, error) {
 func definitionFor(unit Unit) (unitDefinition, error) {
 	definition, ok := unitDefinitions[unit]
 	if !ok {
-		return unitDefinition{}, fmt.Errorf("%w: %q", ErrUnknownUnit, unit)
+		return unitDefinition{}, fmt.Errorf("%w: unsupported unit", ErrUnknownUnit)
 	}
 
 	return definition, nil

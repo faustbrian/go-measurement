@@ -15,6 +15,12 @@ Track, Postal, Location, and logistics services. It uses
 [`math`](https://github.com/faustbrian/go-math) decimals exclusively and never requires binary
 floating-point conversion.
 
+The currently published major remains v1:
+
+```sh
+go get github.com/faustbrian/go-measurement@v1.1.0
+```
+
 ```go
 length := measurement.MustNew(decimal.MustParse("1.25"), measurement.Metre)
 centimetres, err := length.Convert(measurement.Centimetre, measurement.ExactConversion())
@@ -45,9 +51,12 @@ Specification-backed behavior and its executable evidence are recorded in the
 [specification decision register](docs/specification-decisions.md) and
 [conformance matrix](specification/README.md).
 
-Use [`adapters/wire`](https://pkg.go.dev/github.com/faustbrian/go-measurement/adapters/wire)
-for bounded JSON and XML quantity encoding. The former `measurementwire` path
-remains available as a deprecated compatibility facade.
+This source tree prepares the unpublished, non-releasable v2 module. Its
+`ParseQuantityXML`, `ParseDimensionsXML`, and `adapters/wire` entrypoints bound
+XML decoding. Raw `encoding/xml` unmarshalling into measurement types fails
+closed because its callback cannot bound the already-parsed start token.
+Existing consumers must remain on v1 until a v2 release is published, then
+update imports to `github.com/faustbrian/go-measurement/v2`.
 
 For ecosystem-wide selection and ownership guidance, see the versioned
 [Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)

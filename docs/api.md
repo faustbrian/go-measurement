@@ -47,21 +47,30 @@ It calculates floor area, package volume, total volume, and loading metres.
 
 ## Wire adapter
 
-Import `github.com/faustbrian/go-measurement/adapters/wire` when an untrusted
+Import `github.com/faustbrian/go-measurement/v2/adapters/wire` when an untrusted
 JSON or XML quantity document needs a caller-selected byte limit. The adapter
 exports `Options{MaxBytes int64}`, `Encode(Quantity, wire.Format, Options)`, and
 `Decode([]byte, wire.Format, Options)`. A zero `MaxBytes` retains the selected
-`go-wire` codec's default limit; a positive value supplies an explicit
-limit.
+`go-wire` codec's default limit; a positive value supplies an explicit limit.
+XML is also capped by `measurement.MaxSerializedBytes`, so the smaller limit
+applies.
 
 JSON decoding is strict and rejects unknown fields. XML decoding requires the
-`quantity` root. Both formats preserve decimal text and unit identity, and the
-decoded value does not retain the caller's payload. Oversized documents remain
-classifiable with `wire.ErrSizeLimit`; unsupported or unknown formats remain
-classifiable with `wire.ErrUnsupportedFormat`.
+`quantity` root and the fixed bounded schema. Both formats preserve decimal
+text and unit identity, and the decoded value does not retain the caller's
+payload. Documents over the caller's adapter limit remain classifiable with
+`wire.ErrSizeLimit`; documents over the core XML ceiling fail validation.
+Unsupported or unknown formats remain classifiable with
+`wire.ErrUnsupportedFormat`.
 
-`github.com/faustbrian/go-measurement/measurementwire` retains the same
+For direct bounded XML byte slices, use `measurement.ParseQuantityXML` or
+`measurement.ParseDimensionsXML`. Raw `xml.Unmarshal` into these types fails
+with `measurement.ErrUnboundedXML` because its callback cannot constrain work
+performed while parsing the start token.
+
+`github.com/faustbrian/go-measurement/v2/measurementwire` retains the same
 `Options`, `Encode`, and `Decode` signatures as a deprecated delegation-only
 compatibility facade. Its named `Options` type keeps the legacy package's
 reflection identity. New callers should use `adapters/wire`; the earliest
-permitted removal of the legacy path is v2.0.0 and never before 2027-03-08.
+permitted removal of the legacy path is a future major release and never before
+2027-03-08.

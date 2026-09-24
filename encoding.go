@@ -6,17 +6,26 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/faustbrian/go-math/decimal"
 )
 
-// MaxSerializedBytes bounds direct JSON and SQL decoding. Use adapters/wire
-// for streaming codecs and caller-selected explicit limits.
-const MaxSerializedBytes = 64 << 10
+const (
+	// MaxSerializedBytes bounds direct JSON, XML, and SQL decoding.
+	MaxSerializedBytes = 64 << 10
+	// MaxXMLDepth bounds the fixed measurement XML schema.
+	MaxXMLDepth = 3
+	// MaxXMLTokens bounds token work in one measurement XML document.
+	MaxXMLTokens = 64
+
+	maxPackageQuantityTextBytes = 20
+)
 
 type encodedQuantity struct {
 	Value string `json:"value" xml:"value"`
@@ -67,17 +76,11 @@ func (q Quantity) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error
 	return encoder.EncodeElement(encodedQuantity{Value: q.amount.String(), Unit: q.unit}, start)
 }
 
-// UnmarshalXML decodes and validates value and unit metadata.
-func (q *Quantity) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
-	if q == nil {
-		return ErrInvalidQuantity
-	}
-	encoded, err := decodeQuantityXML(decoder, start)
-	if err != nil {
-		return err
-	}
-
-	return q.decode(encoded)
+// UnmarshalXML fails closed because encoding/xml invokes this callback only
+// after its caller-owned decoder has parsed and allocated the start token. Use
+// ParseQuantityXML for byte-bounded XML input.
+func (q *Quantity) UnmarshalXML(_ *xml.Decoder, _ xml.StartElement) error {
+	return fmt.Errorf("%w: %w", ErrInvalidQuantity, ErrUnboundedXML)
 }
 
 // MarshalText returns canonical amount-space-symbol text.
@@ -119,8 +122,14 @@ func (q *Quantity) Scan(source any) error {
 	var data []byte
 	switch value := source.(type) {
 	case string:
+		if len(value) > MaxSerializedBytes {
+			return fmt.Errorf("%w: SQL value exceeds %d bytes", ErrInvalidQuantity, MaxSerializedBytes)
+		}
 		data = []byte(value)
 	case []byte:
+		if len(value) > MaxSerializedBytes {
+			return fmt.Errorf("%w: SQL value exceeds %d bytes", ErrInvalidQuantity, MaxSerializedBytes)
+		}
 		data = append([]byte(nil), value...)
 	default:
 		return fmt.Errorf("%w: unsupported SQL value %T", ErrInvalidQuantity, source)
@@ -190,14 +199,46 @@ func requireJSONEOF(decoder *json.Decoder) error {
 		return fmt.Errorf("%w: trailing JSON value", ErrInvalidQuantity)
 	}
 
-	return fmt.Errorf("%w: %w", ErrInvalidQuantity, err)
+	return invalidJSONError(err)
+}
+
+type redactedJSONError struct {
+	cause error
+}
+
+func (e redactedJSONError) Error() string {
+	return "invalid JSON value"
+}
+
+func (e redactedJSONError) Is(target error) bool {
+	return errors.Is(e.cause, target)
+}
+
+func (e redactedJSONError) As(target any) bool {
+	result, ok := target.(**json.UnmarshalTypeError)
+	if !ok {
+		return false
+	}
+	var source *json.UnmarshalTypeError
+	if !errors.As(e.cause, &source) {
+		return false
+	}
+	sanitized := *source
+	sanitized.Value = "invalid value"
+	*result = &sanitized
+
+	return true
+}
+
+func invalidJSONError(cause error) error {
+	return fmt.Errorf("%w: %w", ErrInvalidQuantity, redactedJSONError{cause: cause})
 }
 
 func decodeJSONObject(data []byte, allowed map[string]struct{}, target any) error {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	token, err := decoder.Token()
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrInvalidQuantity, err)
+		return invalidJSONError(err)
 	}
 	if delimiter, ok := token.(json.Delim); !ok || delimiter != '{' {
 		return fmt.Errorf("%w: expected JSON object", ErrInvalidQuantity)
@@ -207,70 +248,172 @@ func decodeJSONObject(data []byte, allowed map[string]struct{}, target any) erro
 	for decoder.More() {
 		token, err = decoder.Token()
 		if err != nil {
-			return fmt.Errorf("%w: %w", ErrInvalidQuantity, err)
+			return invalidJSONError(err)
 		}
 		name := token.(string)
 		if _, ok := allowed[name]; !ok {
-			return fmt.Errorf("%w: unknown JSON field %q", ErrInvalidQuantity, name)
+			return fmt.Errorf("%w: unknown JSON field", ErrInvalidQuantity)
 		}
 		if _, duplicate := fields[name]; duplicate {
-			return fmt.Errorf("%w: duplicate JSON field %q", ErrInvalidQuantity, name)
+			return fmt.Errorf("%w: duplicate JSON field", ErrInvalidQuantity)
 		}
 		var value json.RawMessage
 		if err := decoder.Decode(&value); err != nil {
-			return fmt.Errorf("%w: %w", ErrInvalidQuantity, err)
+			return invalidJSONError(err)
 		}
 		fields[name] = struct{}{}
 	}
 	if _, err := decoder.Token(); err != nil {
-		return fmt.Errorf("%w: %w", ErrInvalidQuantity, err)
+		return invalidJSONError(err)
 	}
 	if err := requireJSONEOF(decoder); err != nil {
 		return err
 	}
 	if err := json.Unmarshal(data, target); err != nil {
-		return fmt.Errorf("%w: %w", ErrInvalidQuantity, err)
+		return invalidJSONError(err)
 	}
 
 	return nil
 }
 
-func decodeQuantityXML(decoder *xml.Decoder, start xml.StartElement) (encodedQuantity, error) {
+// ParseQuantityXML parses one strict, byte-bounded quantity XML document.
+func ParseQuantityXML(data []byte) (Quantity, error) {
+	decoder, start, budget, err := startXMLDocument(data, "quantity")
+	if err != nil {
+		return Quantity{}, err
+	}
+	encoded, err := decodeQuantityXML(decoder, start, budget)
+	if err != nil {
+		return Quantity{}, err
+	}
+	if err := finishXMLDocument(decoder, budget); err != nil {
+		return Quantity{}, err
+	}
+
+	var quantity Quantity
+	if err := quantity.decode(encoded); err != nil {
+		return Quantity{}, sanitizeXMLValueError(err)
+	}
+
+	return quantity, nil
+}
+
+type xmlParseBudget struct {
+	depth  int
+	tokens int
+}
+
+func startXMLDocument(data []byte, root string) (*xml.Decoder, xml.StartElement, *xmlParseBudget, error) {
+	if len(data) > MaxSerializedBytes {
+		return nil, xml.StartElement{}, nil, invalidXML("document exceeds byte limit")
+	}
+	// Measurement values never require XML references, directives, comments,
+	// or CDATA. Reject them before tokenization so reference expansion and
+	// directive payloads cannot amplify parser work.
+	if bytes.IndexByte(data, '&') >= 0 || bytes.Contains(data, []byte("<!")) {
+		return nil, xml.StartElement{}, nil, invalidXML("unsupported XML construct")
+	}
+
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	budget := &xmlParseBudget{}
+	declarationAllowed := true
+	for {
+		token, err := budget.next(decoder)
+		if err != nil {
+			return nil, xml.StartElement{}, nil, normalizeXMLTokenError(err)
+		}
+		switch value := token.(type) {
+		case xml.StartElement:
+			if value.Name.Space != "" || value.Name.Local != root || len(value.Attr) != 0 {
+				return nil, xml.StartElement{}, nil, invalidXML("invalid root element")
+			}
+
+			return decoder, value, budget, nil
+		case xml.CharData:
+			if len(bytes.TrimSpace(value)) != 0 {
+				return nil, xml.StartElement{}, nil, invalidXML("unexpected document text")
+			}
+		case xml.ProcInst:
+			if !declarationAllowed || value.Target != "xml" ||
+				!bytes.Equal(value.Inst, []byte(`version="1.0"`)) {
+				return nil, xml.StartElement{}, nil, invalidXML("unsupported processing instruction")
+			}
+			declarationAllowed = false
+		}
+	}
+}
+
+func (b *xmlParseBudget) next(decoder *xml.Decoder) (xml.Token, error) {
+	if b.tokens >= MaxXMLTokens {
+		return nil, invalidXML("document exceeds token limit")
+	}
+	token, err := decoder.Token()
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil, io.EOF
+		}
+
+		return nil, invalidXMLSyntax("malformed XML")
+	}
+	b.tokens++
+	switch token.(type) {
+	case xml.StartElement:
+		b.depth++
+		if b.depth > MaxXMLDepth {
+			return nil, invalidXML("document exceeds depth limit")
+		}
+	case xml.EndElement:
+		b.depth--
+	}
+
+	return token, nil
+}
+
+func decodeQuantityXML(
+	decoder *xml.Decoder,
+	start xml.StartElement,
+	budget *xmlParseBudget,
+) (encodedQuantity, error) {
 	var encoded encodedQuantity
 	seen := make(map[string]struct{}, 2)
 	for {
-		token, err := decoder.Token()
+		token, err := budget.next(decoder)
 		if err != nil {
-			return encodedQuantity{}, fmt.Errorf("%w: %w", ErrInvalidQuantity, err)
+			return encodedQuantity{}, normalizeXMLTokenError(err)
 		}
 		switch value := token.(type) {
 		case xml.StartElement:
 			name := value.Name.Local
-			if name != "value" && name != "unit" {
-				return encodedQuantity{}, fmt.Errorf("%w: unknown XML field %q", ErrInvalidQuantity, name)
+			if value.Name.Space != "" || len(value.Attr) != 0 || (name != "value" && name != "unit") {
+				return encodedQuantity{}, invalidXML("invalid quantity field")
 			}
 			if _, duplicate := seen[name]; duplicate {
-				return encodedQuantity{}, fmt.Errorf("%w: duplicate XML field %q", ErrInvalidQuantity, name)
+				return encodedQuantity{}, invalidXML("duplicate quantity field")
 			}
 			seen[name] = struct{}{}
 			if name == "value" {
-				if err := decoder.DecodeElement(&encoded.Value, &value); err != nil {
-					return encodedQuantity{}, fmt.Errorf("%w: %w", ErrInvalidQuantity, err)
+				text, err := decodeXMLText(decoder, value, budget, MaxTextBytes)
+				if err != nil {
+					return encodedQuantity{}, err
 				}
-			} else if err := decoder.DecodeElement(&encoded.Unit, &value); err != nil {
-				return encodedQuantity{}, fmt.Errorf("%w: %w", ErrInvalidQuantity, err)
+				encoded.Value = text
+			} else {
+				text, err := decodeXMLText(decoder, value, budget, MaxAliasBytes)
+				if err != nil {
+					return encodedQuantity{}, err
+				}
+				encoded.Unit = Unit(text)
 			}
 		case xml.EndElement:
 			if value.Name == start.Name {
 				return encoded, nil
 			}
 		case xml.CharData:
-			if strings.TrimSpace(string(value)) != "" {
-				return encodedQuantity{}, fmt.Errorf("%w: unexpected XML text", ErrInvalidQuantity)
+			if len(bytes.TrimSpace(value)) != 0 {
+				return encodedQuantity{}, invalidXML("unexpected quantity text")
 			}
-		case xml.Comment:
 		default:
-			return encodedQuantity{}, fmt.Errorf("%w: unsupported XML token", ErrInvalidQuantity)
+			return encodedQuantity{}, invalidXML("unsupported quantity token")
 		}
 	}
 }
@@ -322,66 +465,174 @@ func (d Dimensions) MarshalXML(encoder *xml.Encoder, start xml.StartElement) err
 	}, start)
 }
 
-// UnmarshalXML decodes and validates a complete dimension triple.
-func (d *Dimensions) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
-	if d == nil {
-		return ErrInvalidQuantity
-	}
-	encoded, err := decodeDimensionsXML(decoder, start)
+// UnmarshalXML fails closed because encoding/xml invokes this callback only
+// after its caller-owned decoder has parsed and allocated the start token. Use
+// ParseDimensionsXML for byte-bounded XML input.
+func (d *Dimensions) UnmarshalXML(_ *xml.Decoder, _ xml.StartElement) error {
+	return fmt.Errorf("%w: %w", ErrInvalidQuantity, ErrUnboundedXML)
+}
+
+// ParseDimensionsXML parses one strict, byte-bounded dimensions XML document.
+func ParseDimensionsXML(data []byte) (Dimensions, error) {
+	decoder, start, budget, err := startXMLDocument(data, "dimensions")
 	if err != nil {
-		return err
+		return Dimensions{}, err
+	}
+	encoded, err := decodeDimensionsXML(decoder, start, budget)
+	if err != nil {
+		return Dimensions{}, err
+	}
+	if err := finishXMLDocument(decoder, budget); err != nil {
+		return Dimensions{}, err
 	}
 	decoded, err := NewDimensions(encoded.Length, encoded.Width, encoded.Height, encoded.Quantity)
 	if err != nil {
-		return err
+		return Dimensions{}, sanitizeXMLValueError(err)
 	}
-	*d = decoded
 
-	return nil
+	return decoded, nil
 }
 
-func decodeDimensionsXML(decoder *xml.Decoder, start xml.StartElement) (encodedDimensions, error) {
+func decodeDimensionsXML(
+	decoder *xml.Decoder,
+	start xml.StartElement,
+	budget *xmlParseBudget,
+) (encodedDimensions, error) {
 	var encoded encodedDimensions
 	seen := make(map[string]struct{}, 4)
 	for {
-		token, err := decoder.Token()
+		token, err := budget.next(decoder)
 		if err != nil {
-			return encodedDimensions{}, fmt.Errorf("%w: %w", ErrInvalidQuantity, err)
+			return encodedDimensions{}, normalizeXMLTokenError(err)
 		}
 		switch value := token.(type) {
 		case xml.StartElement:
 			name := value.Name.Local
-			if name != "length" && name != "width" && name != "height" && name != "quantity" {
-				return encodedDimensions{}, fmt.Errorf("%w: unknown XML field %q", ErrInvalidQuantity, name)
+			if value.Name.Space != "" || len(value.Attr) != 0 ||
+				(name != "length" && name != "width" && name != "height" && name != "quantity") {
+				return encodedDimensions{}, invalidXML("invalid dimensions field")
 			}
 			if _, duplicate := seen[name]; duplicate {
-				return encodedDimensions{}, fmt.Errorf("%w: duplicate XML field %q", ErrInvalidQuantity, name)
+				return encodedDimensions{}, invalidXML("duplicate dimensions field")
 			}
 			seen[name] = struct{}{}
 			switch name {
 			case "length":
-				err = decoder.DecodeElement(&encoded.Length, &value)
+				encoded.Length, err = decodeXMLQuantityValue(decoder, value, budget)
 			case "width":
-				err = decoder.DecodeElement(&encoded.Width, &value)
+				encoded.Width, err = decodeXMLQuantityValue(decoder, value, budget)
 			case "height":
-				err = decoder.DecodeElement(&encoded.Height, &value)
+				encoded.Height, err = decodeXMLQuantityValue(decoder, value, budget)
 			case "quantity":
-				err = decoder.DecodeElement(&encoded.Quantity, &value)
+				var text string
+				text, err = decodeXMLText(decoder, value, budget, maxPackageQuantityTextBytes)
+				if err == nil {
+					encoded.Quantity, err = strconv.ParseUint(text, 10, 64)
+					if err != nil {
+						err = invalidXML("invalid package quantity")
+					}
+				}
 			}
 			if err != nil {
-				return encodedDimensions{}, fmt.Errorf("%w: %w", ErrInvalidQuantity, err)
+				return encodedDimensions{}, err
 			}
 		case xml.EndElement:
 			if value.Name == start.Name {
 				return encoded, nil
 			}
 		case xml.CharData:
-			if strings.TrimSpace(string(value)) != "" {
-				return encodedDimensions{}, fmt.Errorf("%w: unexpected XML text", ErrInvalidQuantity)
+			if len(bytes.TrimSpace(value)) != 0 {
+				return encodedDimensions{}, invalidXML("unexpected dimensions text")
 			}
-		case xml.Comment:
 		default:
-			return encodedDimensions{}, fmt.Errorf("%w: unsupported XML token", ErrInvalidQuantity)
+			return encodedDimensions{}, invalidXML("unsupported dimensions token")
 		}
 	}
+}
+
+func decodeXMLQuantityValue(
+	decoder *xml.Decoder,
+	start xml.StartElement,
+	budget *xmlParseBudget,
+) (Quantity, error) {
+	encoded, err := decodeQuantityXML(decoder, start, budget)
+	if err != nil {
+		return Quantity{}, err
+	}
+	var quantity Quantity
+	if err := quantity.decode(encoded); err != nil {
+		return Quantity{}, sanitizeXMLValueError(err)
+	}
+
+	return quantity, nil
+}
+
+func decodeXMLText(
+	decoder *xml.Decoder,
+	_ xml.StartElement,
+	budget *xmlParseBudget,
+	maxBytes int,
+) (string, error) {
+	var text []byte
+	for {
+		token, err := budget.next(decoder)
+		if err != nil {
+			return "", normalizeXMLTokenError(err)
+		}
+		switch value := token.(type) {
+		case xml.CharData:
+			if len(value) > maxBytes-len(text) {
+				return "", invalidXML("XML field exceeds byte limit")
+			}
+			text = append(text, value...)
+		case xml.EndElement:
+			return string(text), nil
+		default:
+			return "", invalidXML("XML field must contain text only")
+		}
+	}
+}
+
+func finishXMLDocument(decoder *xml.Decoder, budget *xmlParseBudget) error {
+	for {
+		token, err := budget.next(decoder)
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return normalizeXMLTokenError(err)
+		}
+		if text, ok := token.(xml.CharData); ok && len(bytes.TrimSpace(text)) == 0 {
+			continue
+		}
+
+		return invalidXML("trailing XML content")
+	}
+}
+
+func sanitizeXMLValueError(err error) error {
+	switch {
+	case errors.Is(err, ErrUnknownUnit):
+		return ErrUnknownUnit
+	case errors.Is(err, ErrDimensionMismatch):
+		return ErrDimensionMismatch
+	default:
+		return ErrInvalidQuantity
+	}
+}
+
+func normalizeXMLTokenError(err error) error {
+	if errors.Is(err, io.EOF) {
+		return invalidXMLSyntax("unexpected end of XML document")
+	}
+
+	return err
+}
+
+func invalidXML(reason string) error {
+	return fmt.Errorf("%w: %s", ErrInvalidQuantity, reason)
+}
+
+func invalidXMLSyntax(reason string) error {
+	return fmt.Errorf("%w: %w: %s", ErrInvalidQuantity, ErrMalformedXML, reason)
 }

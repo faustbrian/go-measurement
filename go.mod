@@ -1,4 +1,4 @@
-module github.com/faustbrian/go-measurement
+module github.com/faustbrian/go-measurement/v2
 
 go 1.27.0
 

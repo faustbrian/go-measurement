@@ -5,6 +5,21 @@ versioning.
 
 ## Unreleased
 
+### Security
+
+- Bound XML decoding by bytes, schema depth, token and field counts, scalar
+  sizes, and disabled reference processing. JSON, XML, SQL, profile, and unit
+  diagnostics no longer echo hostile field names, aliases, or values.
+
+### Changed
+
+- Prepare the unpublished `github.com/faustbrian/go-measurement/v2` module;
+  publication remains blocked until the v2 release boundary is completed.
+- Make `Quantity.UnmarshalXML` and `Dimensions.UnmarshalXML` fail closed with
+  `ErrUnboundedXML`. Replace raw `encoding/xml` decoding with
+  `ParseQuantityXML`, `ParseDimensionsXML`, or `adapters/wire`; this is a
+  breaking security migration contained in the next major module path.
+
 ### Documentation
 
 - Require Go 1.27.0 across the repository's module language, minimum

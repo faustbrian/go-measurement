@@ -1,13 +1,17 @@
 package measurement_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"reflect"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/faustbrian/go-math/decimal"
-	measurement "github.com/faustbrian/go-measurement"
+	measurement "github.com/faustbrian/go-measurement/v2"
 )
 
 func TestQuantityJSONPreservesDecimalAndUnitMetadata(t *testing.T) {
@@ -54,9 +58,8 @@ func TestQuantityCodecsRejectAmbiguousFields(t *testing.T) {
 		`<quantity><value>1</value><unit>m</unit><unknown>x</unknown></quantity>`,
 	}
 	for _, payload := range xmlPayloads {
-		var quantity measurement.Quantity
-		if err := xml.Unmarshal([]byte(payload), &quantity); !errors.Is(err, measurement.ErrInvalidQuantity) {
-			t.Fatalf("xml.Unmarshal(%s) error = %v, want ErrInvalidQuantity", payload, err)
+		if _, err := measurement.ParseQuantityXML([]byte(payload)); !errors.Is(err, measurement.ErrInvalidQuantity) {
+			t.Fatalf("ParseQuantityXML(%s) error = %v, want ErrInvalidQuantity", payload, err)
 		}
 	}
 }
@@ -73,9 +76,9 @@ func TestQuantityXMLPreservesDecimalAndUnitMetadata(t *testing.T) {
 		t.Fatalf("Marshal() = %s, want %s", got, want)
 	}
 
-	var decoded measurement.Quantity
-	if err := xml.Unmarshal(data, &decoded); err != nil {
-		t.Fatalf("Unmarshal() error = %v", err)
+	decoded, err := measurement.ParseQuantityXML(data)
+	if err != nil {
+		t.Fatalf("ParseQuantityXML() error = %v", err)
 	}
 	if got := decoded.String(); got != original.String() {
 		t.Fatalf("round trip = %q, want %q", got, original)
@@ -99,6 +102,154 @@ func TestQuantitySQLValueAndScannerRoundTrip(t *testing.T) {
 	}
 	if err := decoded.Scan(123); !errors.Is(err, measurement.ErrInvalidQuantity) {
 		t.Fatalf("Scan(int) error = %v", err)
+	}
+}
+
+func TestQuantitySQLScannerRejectsOversizeBeforeCopy(t *testing.T) {
+	oversize := bytes.Repeat([]byte(" "), 4<<20)
+	assertRejected := func(t *testing.T, source any) {
+		t.Helper()
+
+		var decoded measurement.Quantity
+		runtime.GC()
+		var before, after runtime.MemStats
+		runtime.ReadMemStats(&before)
+		for range 8 {
+			if err := decoded.Scan(source); !errors.Is(err, measurement.ErrInvalidQuantity) {
+				t.Fatalf("Scan() error = %v, want ErrInvalidQuantity", err)
+			}
+		}
+		runtime.ReadMemStats(&after)
+		if got := after.TotalAlloc - before.TotalAlloc; got > 1<<20 {
+			t.Fatalf("Scan() allocated %d bytes across eight oversized inputs, want at most 1 MiB", got)
+		}
+	}
+
+	t.Run("bytes", func(t *testing.T) {
+		assertRejected(t, oversize)
+	})
+	t.Run("string", func(t *testing.T) {
+		assertRejected(t, string(oversize))
+	})
+}
+
+func TestQuantitySQLScannerAcceptsExactSerializedByteLimit(t *testing.T) {
+	t.Parallel()
+
+	const canonical = `{"value":"1","unit":"m"}`
+	payload := append(bytes.Repeat([]byte(" "), measurement.MaxSerializedBytes-len(canonical)), canonical...)
+	if len(payload) != measurement.MaxSerializedBytes {
+		t.Fatalf("fixture length = %d, want %d", len(payload), measurement.MaxSerializedBytes)
+	}
+
+	for _, test := range []struct {
+		name   string
+		source any
+	}{
+		{name: "bytes", source: payload},
+		{name: "string", source: string(payload)},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			var decoded measurement.Quantity
+			if err := decoded.Scan(test.source); err != nil {
+				t.Fatalf("Scan(exact byte limit) error = %v", err)
+			}
+			if got, want := decoded.String(), "1 m"; got != want {
+				t.Fatalf("Scan(exact byte limit) = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestDirectDecodersRejectOversizeDocumentsBeforeParsing(t *testing.T) {
+	t.Parallel()
+
+	oversize := bytes.Repeat([]byte(" "), measurement.MaxSerializedBytes+1)
+	tests := []struct {
+		name string
+		call func([]byte) error
+		want string
+	}{
+		{"quantity JSON", func(data []byte) error { return new(measurement.Quantity).UnmarshalJSON(data) }, "JSON exceeds"},
+		{"dimensions JSON", func(data []byte) error { return new(measurement.Dimensions).UnmarshalJSON(data) }, "JSON exceeds"},
+		{"quantity XML", func(data []byte) error { _, err := measurement.ParseQuantityXML(data); return err }, "document exceeds byte limit"},
+		{"dimensions XML", func(data []byte) error { _, err := measurement.ParseDimensionsXML(data); return err }, "document exceeds byte limit"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := test.call(oversize)
+			if !errors.Is(err, measurement.ErrInvalidQuantity) || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("decode(oversize malformed document) error = %v, want %q", err, test.want)
+			}
+		})
+	}
+}
+
+func TestFailedJSONAndSQLDecodesPreserveQuantityForRetry(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name  string
+		apply func(*measurement.Quantity, []byte) error
+	}{
+		{"JSON", func(q *measurement.Quantity, data []byte) error { return json.Unmarshal(data, q) }},
+		{"SQL bytes", func(q *measurement.Quantity, data []byte) error { return q.Scan(data) }},
+		{"SQL string", func(q *measurement.Quantity, data []byte) error { return q.Scan(string(data)) }},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			quantity := measurement.MustNew(decimal.New(9), measurement.Kilogram)
+			if err := test.apply(&quantity, []byte(`{"value":"2","unit":"unknown"}`)); !errors.Is(err, measurement.ErrUnknownUnit) {
+				t.Fatalf("invalid decode error = %v, want ErrUnknownUnit", err)
+			}
+			if got, want := quantity.String(), "9 kg"; got != want {
+				t.Fatalf("quantity after failed decode = %q, want %q", got, want)
+			}
+			if err := test.apply(&quantity, []byte(`{"value":"2","unit":"m"}`)); err != nil {
+				t.Fatalf("retry decode error = %v", err)
+			}
+			if got, want := quantity.String(), "2 m"; got != want {
+				t.Fatalf("quantity after retry = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestFailedDimensionsJSONDecodePreservesReceiverForRetry(t *testing.T) {
+	t.Parallel()
+
+	one := measurement.MustNew(decimal.New(1), measurement.Metre)
+	dimensions, err := measurement.NewDimensions(one, one, one, 2)
+	if err != nil {
+		t.Fatalf("NewDimensions() error = %v", err)
+	}
+	before := dimensions
+	if err := json.Unmarshal([]byte(`{"length":{"value":"2","unit":"m"}}`), &dimensions); err == nil {
+		t.Fatal("incomplete dimensions decoded successfully")
+	}
+	if !reflect.DeepEqual(dimensions, before) {
+		t.Fatal("failed dimensions decode mutated the existing receiver")
+	}
+
+	two := measurement.MustNew(decimal.New(2), measurement.Metre)
+	want, err := measurement.NewDimensions(two, two, two, 3)
+	if err != nil {
+		t.Fatalf("NewDimensions(retry) error = %v", err)
+	}
+	payload, err := json.Marshal(want)
+	if err != nil {
+		t.Fatalf("Marshal(retry) error = %v", err)
+	}
+	if err := json.Unmarshal(payload, &dimensions); err != nil {
+		t.Fatalf("retry dimensions decode error = %v", err)
+	}
+	if got := dimensions.Length().String(); got != "2 m" || dimensions.Quantity() != 3 {
+		t.Fatalf("dimensions after retry = %q x%d, want 2 m x3", got, dimensions.Quantity())
 	}
 }
 
@@ -151,9 +302,9 @@ func TestDimensionsJSONAndXMLRoundTripAllUnits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("XML Marshal() error = %v", err)
 	}
-	var fromXML measurement.Dimensions
-	if err := xml.Unmarshal(xmlData, &fromXML); err != nil {
-		t.Fatalf("XML Unmarshal() error = %v", err)
+	fromXML, err := measurement.ParseDimensionsXML(xmlData)
+	if err != nil {
+		t.Fatalf("ParseDimensionsXML() error = %v", err)
 	}
 	if fromXML.Length().String() != "1.2 m" || fromXML.Width().String() != "80 cm" ||
 		fromXML.Height().String() != "600 mm" || fromXML.Quantity() != 2 {
@@ -185,9 +336,8 @@ func TestDimensionsCodecsRejectAmbiguousFields(t *testing.T) {
 		`<dimensions><length><value>1</value><unit>m</unit></length><width><value>1</value><unit>m</unit></width><height><value>1</value><unit>m</unit></height><quantity>1</quantity><unknown>x</unknown></dimensions>`,
 	}
 	for _, payload := range xmlPayloads {
-		var dimensions measurement.Dimensions
-		if err := xml.Unmarshal([]byte(payload), &dimensions); !errors.Is(err, measurement.ErrInvalidQuantity) {
-			t.Fatalf("xml.Unmarshal(%s) error = %v, want ErrInvalidQuantity", payload, err)
+		if _, err := measurement.ParseDimensionsXML([]byte(payload)); !errors.Is(err, measurement.ErrInvalidQuantity) {
+			t.Fatalf("ParseDimensionsXML(%s) error = %v, want ErrInvalidQuantity", payload, err)
 		}
 	}
 }

@@ -2,11 +2,12 @@ package measurementwire_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/faustbrian/go-math/decimal"
-	measurement "github.com/faustbrian/go-measurement"
-	measurementwire "github.com/faustbrian/go-measurement/adapters/wire"
+	measurement "github.com/faustbrian/go-measurement/v2"
+	measurementwire "github.com/faustbrian/go-measurement/v2/adapters/wire"
 	"github.com/faustbrian/go-wire"
 )
 
@@ -62,6 +63,57 @@ func TestAdapterRejectsUnsupportedFormatsAndOversizePayloads(t *testing.T) {
 	if _, err := measurementwire.Decode([]byte(`{"value":"1","unit":"m"}`), wire.FormatJSON, measurementwire.Options{MaxBytes: 4}); !errors.Is(err, wire.ErrSizeLimit) {
 		t.Fatalf("Decode(oversize) error = %v", err)
 	}
+	if _, err := measurementwire.Decode([]byte(`<quantity/>`), wire.FormatXML, measurementwire.Options{MaxBytes: 4}); !errors.Is(err, wire.ErrSizeLimit) {
+		t.Fatalf("Decode(XML oversize) error = %v", err)
+	}
+	if _, err := measurementwire.Decode([]byte(`<quantity/>`), wire.FormatXML, measurementwire.Options{MaxBytes: -1}); !errors.Is(err, wire.ErrValidation) {
+		t.Fatalf("Decode(XML negative limit) error = %v", err)
+	}
+	coreOversize := []byte(
+		`<quantity><value>` +
+			strings.Repeat("9", measurement.MaxSerializedBytes) +
+			`</value><unit>m</unit></quantity>`,
+	)
+	if _, err := measurementwire.Decode(coreOversize, wire.FormatXML, measurementwire.Options{MaxBytes: int64(len(coreOversize))}); !errors.Is(err, wire.ErrValidation) || !errors.Is(err, measurement.ErrInvalidQuantity) {
+		t.Fatalf("Decode(XML core limit) error = %v", err)
+	}
+}
+
+func TestXMLDecodeAcceptsExactConfiguredLimit(t *testing.T) {
+	t.Parallel()
+
+	payload := []byte(`<quantity><value>1</value><unit>m</unit></quantity>`)
+	quantity, err := measurementwire.Decode(payload, wire.FormatXML, measurementwire.Options{MaxBytes: int64(len(payload))})
+	if err != nil {
+		t.Fatalf("Decode(exact configured limit) error = %v", err)
+	}
+	if got, want := quantity.String(), "1 m"; got != want {
+		t.Fatalf("Decode(exact configured limit) = %q, want %q", got, want)
+	}
+	if _, err := measurementwire.Decode(payload, wire.FormatXML, measurementwire.Options{MaxBytes: int64(len(payload) - 1)}); !errors.Is(err, wire.ErrSizeLimit) {
+		t.Fatalf("Decode(one below payload length) error = %v, want ErrSizeLimit", err)
+	}
+}
+
+func TestXMLDecodeClassifiesSyntaxAndValueErrors(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name    string
+		payload string
+		want    error
+	}{
+		{name: "truncated XML", payload: `<quantity>`, want: wire.ErrParse},
+		{name: "invalid value", payload: `<quantity><value>1</value><unit>unknown</unit></quantity>`, want: wire.ErrValidation},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := measurementwire.Decode([]byte(test.payload), wire.FormatXML, measurementwire.Options{})
+			if !errors.Is(err, test.want) {
+				t.Fatalf("Decode() error = %v, want %v", err, test.want)
+			}
+		})
+	}
 }
 
 func TestDecodeDoesNotRetainCallerPayload(t *testing.T) {
@@ -75,5 +127,21 @@ func TestDecodeDoesNotRetainCallerPayload(t *testing.T) {
 	clear(payload)
 	if decoded.String() != "4.50 kg" {
 		t.Fatalf("decoded quantity after caller mutation = %q", decoded)
+	}
+}
+
+func TestXMLDecodeUsesBoundedDefault(t *testing.T) {
+	t.Parallel()
+
+	decoded, err := measurementwire.Decode(
+		[]byte(`<quantity><value>4.50</value><unit>kg</unit></quantity>`),
+		wire.FormatXML,
+		measurementwire.Options{},
+	)
+	if err != nil {
+		t.Fatalf("Decode() error = %v", err)
+	}
+	if got := decoded.String(); got != "4.50 kg" {
+		t.Fatalf("Decode() = %q, want %q", got, "4.50 kg")
 	}
 }

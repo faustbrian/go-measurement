@@ -60,7 +60,7 @@ func (p Profile) Resolve(alias string) (Unit, error) {
 	}
 	unit, ok := p.aliases[alias]
 	if !ok {
-		return "", fmt.Errorf("%w: %q", ErrUnknownUnit, alias)
+		return "", fmt.Errorf("%w: unsupported unit alias", ErrUnknownUnit)
 	}
 	if _, err := definitionFor(unit); err != nil {
 		return "", err
