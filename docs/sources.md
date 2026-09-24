@@ -57,6 +57,9 @@ The 2026-09-06 authority review retrieved the DHL, DB Schenker, and DSV sources.
 The DSV response changed at the byte level during its site migration, while the
 mapped international-road formula, factors, and Euro-pallet example remained
 unchanged.
+The 2026-09-24 review refreshed the DSV and DHL response pins after byte-level
+changes. DSV's cited 333 kg/m3 factor and 319.68 kg Euro-pallet example, and
+DHL's 5000 cm3/kg divisor, remain present; their fixtures are unchanged.
 The FedEx URL returned a service-unavailable page, so its historical example
 remains executable arithmetic evidence but is not claimed as current pinned
 provider agreement. No maintained software unit-library differential is run;
