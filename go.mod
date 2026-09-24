@@ -4,5 +4,5 @@ go 1.27.0
 
 require (
 	github.com/faustbrian/go-math v1.1.0
-	github.com/faustbrian/go-wire v1.0.0
+	github.com/faustbrian/go-wire v1.0.1
 )
