@@ -15,9 +15,10 @@ corresponding v1 method without that suffix retains its signature, result,
 validation, and error behavior and delegates with `context.Background()`.
 Migrate only callers that need operation cancellation or deadline propagation.
 
-The source tree now uses `github.com/faustbrian/go-measurement/v2` to prepare
-the next major release; it is planned, non-releasable, and not published. The
-released v1 package remains the supported public installation. That major
+The source tree uses `github.com/faustbrian/go-measurement/v2` for v2.0.0,
+dated 2026-09-27. Release eligibility and the changelog date are not proof of
+publication. Install v2 only when its tag and public module artifacts are
+available; until then, existing installations can retain released v1. The v2 major
 makes raw `encoding/xml` unmarshalling into `Quantity` and `Dimensions` fail
 closed.
 Those callbacks cannot constrain allocation of the start token parsed by a

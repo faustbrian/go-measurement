@@ -5,7 +5,7 @@
 [![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
-[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-measurement.svg)](https://pkg.go.dev/github.com/faustbrian/go-measurement)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-measurement/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-measurement/v2)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-measurement?sort=semver)](https://github.com/faustbrian/go-measurement/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -15,11 +15,15 @@ Track, Postal, Location, and logistics services. It uses
 [`math`](https://github.com/faustbrian/go-math) decimals exclusively and never requires binary
 floating-point conversion.
 
-The currently published major remains v1:
+Install v2.0.0 once its tag and public module artifacts are available:
 
 ```sh
-go get github.com/faustbrian/go-measurement@v1.1.0
+go get github.com/faustbrian/go-measurement/v2@v2.0.0
 ```
+
+Before those artifacts are available, existing v1 consumers can continue using
+`github.com/faustbrian/go-measurement@v1.1.0`; do not bypass publication with a
+local replacement or pseudo-version.
 
 ```go
 length := measurement.MustNew(decimal.MustParse("1.25"), measurement.Metre)
@@ -32,7 +36,7 @@ loading metre, dimensional weight, and rectangular package triples. Compatible
 quantities can be converted, compared, added, subtracted, multiplied, divided,
 rounded, clamped, counted, formatted, and serialized. Absolute temperatures
 can be converted and compared but not added or subtracted because temperature
-intervals are not part of the v1 model.
+intervals are not part of the measurement model.
 
 Every conversion selects either `ExactConversion()` or
 `RoundedConversion(scale, mode)`. Unit aliases are accepted only through a
@@ -51,7 +55,8 @@ Specification-backed behavior and its executable evidence are recorded in the
 [specification decision register](docs/specification-decisions.md) and
 [conformance matrix](specification/README.md).
 
-This source tree prepares the unpublished, non-releasable v2 module. Its
+This source tree defines v2.0.0, dated 2026-09-27. Release eligibility and the
+changelog date do not establish that public artifacts are available. Its
 `ParseQuantityXML`, `ParseDimensionsXML`, and `adapters/wire` entrypoints bound
 XML decoding. Raw `encoding/xml` unmarshalling into measurement types fails
 closed because its callback cannot bound the already-parsed start token.

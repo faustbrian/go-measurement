@@ -60,6 +60,12 @@ unchanged.
 The 2026-09-24 review refreshed the DSV and DHL response pins after byte-level
 changes. DSV's cited 333 kg/m3 factor and 319.68 kg Euro-pallet example, and
 DHL's 5000 cm3/kg divisor, remain present; their fixtures are unchanged.
+The 2026-09-27 review retrieved DSV with the pinned validator's User-Agent,
+direct HTTPS requests, and decoded response body. Its body fingerprint changed
+again, while the international-road factor of 333 kg/m3 and the explicit
+1.2 x 0.8 x 1 x 333 = 319.68 kg example remain present. DHL's reviewed body
+fingerprint and 5000 cm3/kg divisor are unchanged. Only the DSV source and
+release-sentinel fingerprints were refreshed; no formula or fixture changed.
 The FedEx URL returned a service-unavailable page, so its historical example
 remains executable arithmetic evidence but is not claimed as current pinned
 provider agreement. No maintained software unit-library differential is run;

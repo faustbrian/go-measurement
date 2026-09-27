@@ -3,7 +3,10 @@
 All notable changes follow Keep a Changelog. The project uses semantic
 versioning.
 
-## Unreleased
+## 2.0.0 - 2026-09-27
+
+This entry describes the v2.0.0 release source. Its date does not establish
+publication; adoption requires the public tag and module artifacts.
 
 ### Security
 
@@ -13,8 +16,8 @@ versioning.
 
 ### Changed
 
-- Prepare the unpublished `github.com/faustbrian/go-measurement/v2` module;
-  publication remains blocked until the v2 release boundary is completed.
+- Adopt the `github.com/faustbrian/go-measurement/v2` module path. Upgrade
+  imports and owned consumers only after its public artifacts are available.
 - Make `Quantity.UnmarshalXML` and `Dimensions.UnmarshalXML` fail closed with
   `ErrUnboundedXML`. Replace raw `encoding/xml` decoding with
   `ParseQuantityXML`, `ParseDimensionsXML`, or `adapters/wire`; this is a
