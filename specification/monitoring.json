@@ -38,7 +38,7 @@
       "kind": "recommendation",
       "version": "Carrier logistics references snapshot 2026-08-30",
       "url": "https://www.dsv.com/it-it/sostegno/faq/calcolatore-di-peso-volumetrico",
-      "sha256": "65020a69692d80e9ff32fac6d146c76f3dabfcbf63e5f2a9cbd1a624e40ff51f",
+      "sha256": "033eb78b6fe0e49b1e653f8f63c6cf019082f97552fd91bf253e9d4fa3dfccdf",
       "specifications": ["Carrier logistics references snapshot 2026-08-30"]
     },
     {
@@ -61,7 +61,7 @@
       "id": "carrier-logistics-releases",
       "kind": "releases",
       "url": "https://www.dsv.com/it-it/sostegno/faq/calcolatore-di-peso-volumetrico",
-      "sha256": "65020a69692d80e9ff32fac6d146c76f3dabfcbf63e5f2a9cbd1a624e40ff51f",
+      "sha256": "033eb78b6fe0e49b1e653f8f63c6cf019082f97552fd91bf253e9d4fa3dfccdf",
       "specifications": ["Carrier logistics references snapshot 2026-08-30"]
     }
   ]

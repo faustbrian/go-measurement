@@ -3,6 +3,17 @@
 All notable changes follow Keep a Changelog. The project uses semantic
 versioning.
 
+## 2.0.1 - 2026-10-01
+
+This entry describes the planned v2.0.1 release source. Its date does not
+establish publication; adoption requires the public tag and module artifacts.
+
+### Changed
+
+- Select the public `go-math` v1.1.2 security patch for exact decimal arithmetic
+  while retaining Measurement's v2 unit, conversion, wire, and cancellation
+  contracts.
+
 ## 2.0.0 - 2026-09-27
 
 This entry describes the v2.0.0 release source. Its date does not establish
