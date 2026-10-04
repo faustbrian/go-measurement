@@ -3,6 +3,22 @@
 All notable changes follow Keep a Changelog. The project uses semantic
 versioning.
 
+## 2.0.2 - 2026-10-04
+
+This entry describes the v2.0.2 release source. The preceding v2.0.1 was
+published on 2026-10-01; its original release record is retained below.
+
+### Changed
+
+- Update the optional Wire codec dependency to v1.0.1 while preserving
+  Measurement's v2 unit, conversion, bounded JSON/XML, and cancellation
+  contracts, module path, and Go 1.27 minimum.
+
+### Documentation
+
+- Identify the published v2 module in adoption guidance and retain the
+  existing bounded-XML migration requirements for v1 consumers.
+
 ## 2.0.1 - 2026-10-01
 
 This entry describes the planned v2.0.1 release source. Its date does not

@@ -15,15 +15,15 @@ Track, Postal, Location, and logistics services. It uses
 [`math`](https://github.com/faustbrian/go-math) decimals exclusively and never requires binary
 floating-point conversion.
 
-Install v2.0.0 once its tag and public module artifacts are available:
+Install the published v2 module:
 
 ```sh
-go get github.com/faustbrian/go-measurement/v2@v2.0.0
+go get github.com/faustbrian/go-measurement/v2
 ```
 
-Before those artifacts are available, existing v1 consumers can continue using
-`github.com/faustbrian/go-measurement@v1.1.0`; do not bypass publication with a
-local replacement or pseudo-version.
+The v2 stream, including v2.0.1, is published. Existing v2 imports remain
+unchanged for the next patch; v1 consumers should follow the
+[migration guide](docs/migration.md) before updating imports.
 
 ```go
 length := measurement.MustNew(decimal.MustParse("1.25"), measurement.Metre)
@@ -55,13 +55,12 @@ Specification-backed behavior and its executable evidence are recorded in the
 [specification decision register](docs/specification-decisions.md) and
 [conformance matrix](specification/README.md).
 
-This source tree defines v2.0.0, dated 2026-09-27. Release eligibility and the
-changelog date do not establish that public artifacts are available. Its
-`ParseQuantityXML`, `ParseDimensionsXML`, and `adapters/wire` entrypoints bound
-XML decoding. Raw `encoding/xml` unmarshalling into measurement types fails
-closed because its callback cannot bound the already-parsed start token.
-Existing consumers must remain on v1 until a v2 release is published, then
-update imports to `github.com/faustbrian/go-measurement/v2`.
+The published v2 module's `ParseQuantityXML`, `ParseDimensionsXML`, and
+`adapters/wire` entrypoints bound XML decoding. Raw `encoding/xml`
+unmarshalling into measurement types fails closed because its callback
+cannot bound the already-parsed start token. V1 consumers must update
+imports to `github.com/faustbrian/go-measurement/v2` and adopt these bounded
+XML entrypoints; v2.0.2 retains the same migration requirements.
 
 For ecosystem-wide selection and ownership guidance, see the versioned
 [Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
