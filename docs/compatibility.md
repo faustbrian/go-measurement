@@ -15,16 +15,14 @@ corresponding v1 method without that suffix retains its signature, result,
 validation, and error behavior and delegates with `context.Background()`.
 Migrate only callers that need operation cancellation or deadline propagation.
 
-The source tree uses `github.com/faustbrian/go-measurement/v2` for v2.0.0,
-dated 2026-09-27. Release eligibility and the changelog date are not proof of
-publication. Install v2 only when its tag and public module artifacts are
-available; until then, existing installations can retain released v1. The v2 major
-makes raw `encoding/xml` unmarshalling into `Quantity` and `Dimensions` fail
-closed.
-Those callbacks cannot constrain allocation of the start token parsed by a
-caller-owned decoder. Migrate to `ParseQuantityXML`, `ParseDimensionsXML`, or
-`adapters/wire` only after v2 is published. Existing consumers remain on v1
-until then.
+The published v2 stream uses `github.com/faustbrian/go-measurement/v2`.
+The v2.0.2 maintenance patch retains its Go 1.27 minimum, APIs, and bounded
+JSON/XML contracts. The v2 major makes raw `encoding/xml` unmarshalling
+into `Quantity` and `Dimensions` fail closed: those callbacks cannot
+constrain allocation of the start token parsed by a caller-owned decoder.
+V1 consumers must update imports and migrate to `ParseQuantityXML`,
+`ParseDimensionsXML`, or `adapters/wire` when adopting the published v2
+module. Existing v2 consumers require no additional migration for this patch.
 
 `math` owns decimal representation, rounding modes, errors, conditions, and
 resource limits. `wire` is used only by the optional `adapters/wire` package.

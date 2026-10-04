@@ -33,11 +33,11 @@ callers that intentionally retain the detached v1 behavior.
 
 ## Replace raw XML unmarshalling
 
-This migration targets v2.0.0, dated 2026-09-27, of the
-`github.com/faustbrian/go-measurement/v2` module. Existing consumers must stay
-on released v1 until v2 is published; do not add a replace directive or a
-pseudo-version to bypass that release boundary. After publication, update the
-module import path before adopting the new XML entrypoints.
+This migration applies to the published
+`github.com/faustbrian/go-measurement/v2` module, introduced in v2.0.0.
+V1 consumers must update the module import path and adopt the bounded XML
+entrypoints. The v2.0.2 maintenance patch retains these requirements and
+does not require an additional migration from v2.0.1.
 
 Raw `encoding/xml.Unmarshal` and `Decoder.Decode` calls targeting `Quantity`
 or `Dimensions` now fail with `ErrUnboundedXML`. Replace them with the bounded
@@ -59,7 +59,7 @@ from schema and value failures classified as `wire.ErrValidation`.
 The owned direct consumers `go-knapsack` (including its objective and
 reference modules) and `go-rule-engine/adapters/measurement` require this
 migration and consumer verification when adopting v2. Their v1 dependencies
-must not be replaced with v2 until the public version is available.
+must be updated only with the bounded-XML migration and consumer verification.
 
 ## Handle redacted JSON diagnostics
 
