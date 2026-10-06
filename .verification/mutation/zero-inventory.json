@@ -6,8 +6,8 @@
       "gremlins_version": "v0.6.0",
       "module_directory": ".",
       "package_directory": "measurementwire",
-      "reason": "The deprecated facade contains a distinct named options type and direct successor delegations only; the complete enabled Gremlins operator set discovers no viable transformations.",
-      "source_digest": "81f31f1fbbf7f728fd6e54d403cde453d0e901d2745acc83fed6189bb6fd88aa"
+      "reason": "The deprecated facade contains a distinct named options type and two direct successor delegations only; the complete enabled Gremlins operator set has no applicable transformations. Native CI 37469621648 reports no results and covers both forwarding statements. This source/verifier-bound disposition expires 2026-11-05 or immediately when facade production source or enabled operators change; public behavior remains separately tested.",
+      "source_digest": "be8a4c26ce5e8859bb9732c12945c72a075f6949f1a36668aa6f1d6307d0013f"
     }
   ]
 }
