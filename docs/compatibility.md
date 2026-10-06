@@ -24,6 +24,16 @@ V1 consumers must update imports and migrate to `ParseQuantityXML`,
 `ParseDimensionsXML`, or `adapters/wire` when adopting the published v2
 module. Existing v2 consumers require no additional migration for this patch.
 
+The v3 stream uses `github.com/faustbrian/go-measurement/v3` and adopts
+`github.com/faustbrian/go-wire/v3@v3.0.0`. The adapter's public `wire.Format`
+parameter and `*wire.Error` classification move together to Wire v3; update
+Wire imports and sentinels alongside measurement imports. This nominal type
+change requires the new Measurement major even though supported formats,
+round trips, byte limits, unit semantics, and bounded XML behavior are retained.
+Wire v3 renders fixed error classes rather than detailed diagnostic text.
+Existing major versions remain separate dependencies; migration is explicit.
+See [the migration guide](migration.md#adopt-measurement-v3-and-wire-v3-together).
+
 `math` owns decimal representation, rounding modes, errors, conditions, and
 resource limits. `wire` is used only by the optional `adapters/wire` package.
 The former `measurementwire` path is a deprecated delegation-only facade that

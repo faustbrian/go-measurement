@@ -3,6 +3,24 @@
 All notable changes follow Keep a Changelog. The project uses semantic
 versioning.
 
+## 3.0.0 - 2026-10-06
+
+This entry describes the v3.0.0 release source. Adoption requires the public
+tag and module artifacts; the date alone does not establish publication.
+
+### Changed
+
+- Adopt `github.com/faustbrian/go-measurement/v3` and the public
+  `github.com/faustbrian/go-wire/v3@v3.0.0` dependency. Update measurement and
+  Wire imports together because adapter format parameters, error types, and
+  sentinels now use Wire v3's nominal identities.
+- Retain JSON/XML roundtrips, bounded decoding, caller byte limits, unit and
+  decimal metadata, redacted diagnostics, and the Go 1.27 minimum. Wire errors
+  render fixed classifications; classify with sentinels instead of strings.
+- Keep both `adapters/wire` and the deprecated `measurementwire` facade with
+  distinct named `Options` types. The facade is not removed in this major;
+  removal remains prohibited before 2027-03-08.
+
 ## 2.0.2 - 2026-10-04
 
 This entry describes the v2.0.2 release source. The preceding v2.0.1 was

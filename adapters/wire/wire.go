@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 
-	measurement "github.com/faustbrian/go-measurement/v2"
-	"github.com/faustbrian/go-wire"
-	"github.com/faustbrian/go-wire/jsonwire"
-	"github.com/faustbrian/go-wire/xmlwire"
+	measurement "github.com/faustbrian/go-measurement/v3"
+	"github.com/faustbrian/go-wire/v3"
+	"github.com/faustbrian/go-wire/v3/jsonwire"
+	"github.com/faustbrian/go-wire/v3/xmlwire"
 )
 
 // Options bounds encoded and decoded documents. Zero values retain the

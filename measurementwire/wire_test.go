@@ -1,15 +1,38 @@
 package measurementwire_test
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
 
 	"github.com/faustbrian/go-math/decimal"
-	measurement "github.com/faustbrian/go-measurement/v2"
-	"github.com/faustbrian/go-measurement/v2/measurementwire"
-	"github.com/faustbrian/go-wire"
+	measurement "github.com/faustbrian/go-measurement/v3"
+	"github.com/faustbrian/go-measurement/v3/measurementwire"
+	"github.com/faustbrian/go-wire/v3"
 )
+
+func TestUnwrappedJSONCauseRemainsRedacted(t *testing.T) {
+	t.Parallel()
+
+	const marker = "private-marker"
+	_, err := measurementwire.Decode([]byte(`{"value":"private-marker"`), wire.FormatJSON, measurementwire.Options{})
+	var categorized *wire.Error
+	if !errors.Is(err, wire.ErrParse) || !errors.As(err, &categorized) {
+		t.Fatalf("Decode() = %v, want typed parse error", err)
+	}
+	cause := errors.Unwrap(err)
+	if cause == nil || cause.Error() != "invalid JSON payload" {
+		t.Fatal("unwrapped JSON cause lost its fixed redacted rendering")
+	}
+	if strings.Contains(err.Error(), marker) || strings.Contains(cause.Error(), marker) {
+		t.Fatal("JSON error chain exposed payload")
+	}
+	var syntax *json.SyntaxError
+	if errors.As(err, &syntax) {
+		t.Fatal("JSON error chain exposed the original syntax error")
+	}
+}
 
 func TestJSONAndXMLRoundTripsPreserveUnitMetadata(t *testing.T) {
 	t.Parallel()
