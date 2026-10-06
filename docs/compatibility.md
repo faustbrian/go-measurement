@@ -29,7 +29,7 @@ The v3 stream uses `github.com/faustbrian/go-measurement/v3` and adopts
 parameter and `*wire.Error` classification move together to Wire v3; update
 Wire imports and sentinels alongside measurement imports. This nominal type
 change requires the new Measurement major even though supported formats,
-roundtrips, byte limits, unit semantics, and bounded XML behavior are retained.
+round trips, byte limits, unit semantics, and bounded XML behavior are retained.
 Wire v3 renders fixed error classes rather than detailed diagnostic text.
 Existing major versions remain separate dependencies; migration is explicit.
 See [the migration guide](migration.md#adopt-measurement-v3-and-wire-v3-together).
