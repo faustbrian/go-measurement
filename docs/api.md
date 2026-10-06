@@ -47,7 +47,7 @@ It calculates floor area, package volume, total volume, and loading metres.
 
 ## Wire adapter
 
-Import `github.com/faustbrian/go-measurement/v2/adapters/wire` when an untrusted
+Import `github.com/faustbrian/go-measurement/v3/adapters/wire` when an untrusted
 JSON or XML quantity document needs a caller-selected byte limit. The adapter
 exports `Options{MaxBytes int64}`, `Encode(Quantity, wire.Format, Options)`, and
 `Decode([]byte, wire.Format, Options)`. A zero `MaxBytes` retains the selected
@@ -68,7 +68,7 @@ For direct bounded XML byte slices, use `measurement.ParseQuantityXML` or
 with `measurement.ErrUnboundedXML` because its callback cannot constrain work
 performed while parsing the start token.
 
-`github.com/faustbrian/go-measurement/v2/measurementwire` retains the same
+`github.com/faustbrian/go-measurement/v3/measurementwire` retains the same
 `Options`, `Encode`, and `Decode` signatures as a deprecated delegation-only
 compatibility facade. Its named `Options` type keeps the legacy package's
 reflection identity. New callers should use `adapters/wire`; the earliest

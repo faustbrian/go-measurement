@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	"github.com/faustbrian/go-math/decimal"
-	measurement "github.com/faustbrian/go-measurement/v2"
-	measurementwire "github.com/faustbrian/go-measurement/v2/adapters/wire"
+	measurement "github.com/faustbrian/go-measurement/v3"
+	measurementwire "github.com/faustbrian/go-measurement/v3/adapters/wire"
 
 	//lint:ignore SA1019 Verify the supported deprecated facade.
-	legacywire "github.com/faustbrian/go-measurement/v2/measurementwire" //nolint:staticcheck // Compatibility coverage.
-	"github.com/faustbrian/go-wire"
+	legacywire "github.com/faustbrian/go-measurement/v3/measurementwire" //nolint:staticcheck // Compatibility coverage.
+	"github.com/faustbrian/go-wire/v3"
 )
 
 func TestPublicJSONDiagnosticsSanitizeTypedErrors(t *testing.T) {

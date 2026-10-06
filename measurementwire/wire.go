@@ -1,16 +1,16 @@
 // Package measurementwire is the compatibility facade for the bounded
 // measurement wire adapter.
 //
-// Deprecated: use github.com/faustbrian/go-measurement/v2/adapters/wire,
+// Deprecated: use github.com/faustbrian/go-measurement/v3/adapters/wire,
 // introduced in v1.1.0 with the same Options, Encode, and Decode usage. The
 // earliest permitted removal is a future major release and never before
 // 2027-03-08.
 package measurementwire
 
 import (
-	measurement "github.com/faustbrian/go-measurement/v2"
-	adapter "github.com/faustbrian/go-measurement/v2/adapters/wire"
-	"github.com/faustbrian/go-wire"
+	measurement "github.com/faustbrian/go-measurement/v3"
+	adapter "github.com/faustbrian/go-measurement/v3/adapters/wire"
+	"github.com/faustbrian/go-wire/v3"
 )
 
 // Options bounds encoded and decoded documents. XML decoding also enforces

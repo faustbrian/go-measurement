@@ -5,7 +5,7 @@
 [![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
-[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-measurement/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-measurement/v2)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-measurement/v3.svg)](https://pkg.go.dev/github.com/faustbrian/go-measurement/v3)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-measurement?sort=semver)](https://github.com/faustbrian/go-measurement/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -15,15 +15,16 @@ Track, Postal, Location, and logistics services. It uses
 [`math`](https://github.com/faustbrian/go-math) decimals exclusively and never requires binary
 floating-point conversion.
 
-Install the published v2 module:
+Install the v3 module after its public release is available:
 
 ```sh
-go get github.com/faustbrian/go-measurement/v2
+go get github.com/faustbrian/go-measurement/v3@v3.0.0
 ```
 
-The v2 stream, including v2.0.1, is published. Existing v2 imports remain
-unchanged for the next patch; v1 consumers should follow the
-[migration guide](docs/migration.md) before updating imports.
+V3 adopts `github.com/faustbrian/go-wire/v3@v3.0.0`. Update measurement
+imports and the Wire `Format`, error type, and sentinel imports together;
+see the [migration guide](docs/migration.md). Existing v1 and v2 modules
+remain separate major-version dependencies.
 
 ```go
 length := measurement.MustNew(decimal.MustParse("1.25"), measurement.Metre)
@@ -55,12 +56,12 @@ Specification-backed behavior and its executable evidence are recorded in the
 [specification decision register](docs/specification-decisions.md) and
 [conformance matrix](specification/README.md).
 
-The published v2 module's `ParseQuantityXML`, `ParseDimensionsXML`, and
+The v3 module retains v2's `ParseQuantityXML`, `ParseDimensionsXML`, and
 `adapters/wire` entrypoints bound XML decoding. Raw `encoding/xml`
 unmarshalling into measurement types fails closed because its callback
 cannot bound the already-parsed start token. V1 consumers must update
-imports to `github.com/faustbrian/go-measurement/v2` and adopt these bounded
-XML entrypoints; v2.0.2 retains the same migration requirements.
+imports to `github.com/faustbrian/go-measurement/v3` and adopt these bounded
+XML entrypoints. V2 consumers retain the same XML entrypoints in v3.
 
 For ecosystem-wide selection and ownership guidance, see the versioned
 [Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)

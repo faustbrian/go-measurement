@@ -8,11 +8,51 @@ import (
 	"testing"
 
 	"github.com/faustbrian/go-math/decimal"
-	measurement "github.com/faustbrian/go-measurement/v2"
-	measurementwire "github.com/faustbrian/go-measurement/v2/adapters/wire"
-	legacywire "github.com/faustbrian/go-measurement/v2/measurementwire"
-	"github.com/faustbrian/go-wire"
+	measurement "github.com/faustbrian/go-measurement/v3"
+	measurementwire "github.com/faustbrian/go-measurement/v3/adapters/wire"
+	legacywire "github.com/faustbrian/go-measurement/v3/measurementwire"
+	"github.com/faustbrian/go-wire/v3"
 )
+
+func TestWireAdaptersExposeCurrentWireErrorIdentity(t *testing.T) {
+	t.Parallel()
+
+	for name, decode := range map[string]func([]byte, wire.Format) error{
+		"adapter": func(payload []byte, format wire.Format) error {
+			_, err := measurementwire.Decode(payload, format, measurementwire.Options{MaxBytes: 128})
+			return err
+		},
+		"facade": func(payload []byte, format wire.Format) error {
+			_, err := legacywire.Decode(payload, format, legacywire.Options{MaxBytes: 128})
+			return err
+		},
+	} {
+		for _, test := range []struct {
+			name    string
+			payload []byte
+			format  wire.Format
+			kind    error
+		}{
+			{"JSON parse", []byte(`{"value":`), wire.FormatJSON, wire.ErrParse},
+			{"XML parse", []byte(`<quantity>`), wire.FormatXML, wire.ErrParse},
+			{"JSON unknown unit", []byte(`{"value":"1","unit":"unknown"}`), wire.FormatJSON, wire.ErrParse},
+			{"XML validation", []byte(`<quantity><value>1</value><unit>unknown</unit></quantity>`), wire.FormatXML, wire.ErrValidation},
+			{"unsupported", nil, wire.FormatYAML, wire.ErrUnsupportedFormat},
+			{"size", make([]byte, 129), wire.FormatXML, wire.ErrSizeLimit},
+		} {
+			t.Run(name+"/"+test.name, func(t *testing.T) {
+				err := decode(test.payload, test.format)
+				var classified *wire.Error
+				if !errors.Is(err, test.kind) || !errors.As(err, &classified) {
+					t.Fatalf("error = %v, want Wire v3 classification %v and *wire.Error", err, test.kind)
+				}
+				if classified.Format != test.format || classified.Op != "decode" {
+					t.Fatalf("classification = %+v, want selected format and decode operation", classified)
+				}
+			})
+		}
+	}
+}
 
 func TestWireSuccessorPreservesBoundedSerializationContract(t *testing.T) {
 	t.Parallel()
@@ -49,10 +89,10 @@ func TestWireSuccessorPreservesBoundedSerializationContract(t *testing.T) {
 func TestLegacyWireRemainsDistinctDelegatingCompatibilityFacade(t *testing.T) {
 	t.Parallel()
 
-	if got := reflect.TypeOf(legacywire.Options{}).PkgPath(); got != "github.com/faustbrian/go-measurement/v2/measurementwire" {
+	if got := reflect.TypeOf(legacywire.Options{}).PkgPath(); got != "github.com/faustbrian/go-measurement/v3/measurementwire" {
 		t.Fatalf("legacy Options package = %q", got)
 	}
-	if got := reflect.TypeOf(measurementwire.Options{}).PkgPath(); got != "github.com/faustbrian/go-measurement/v2/adapters/wire" {
+	if got := reflect.TypeOf(measurementwire.Options{}).PkgPath(); got != "github.com/faustbrian/go-measurement/v3/adapters/wire" {
 		t.Fatalf("successor Options package = %q", got)
 	}
 

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	measurement "github.com/faustbrian/go-measurement/v2"
+	measurement "github.com/faustbrian/go-measurement/v3"
 )
 
 func FuzzParseAndTextRoundTrip(f *testing.F) {

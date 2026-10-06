@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/faustbrian/go-math/decimal"
-	measurement "github.com/faustbrian/go-measurement/v2"
-	"github.com/faustbrian/go-measurement/v2/measurementwire"
-	"github.com/faustbrian/go-wire"
+	measurement "github.com/faustbrian/go-measurement/v3"
+	"github.com/faustbrian/go-measurement/v3/measurementwire"
+	"github.com/faustbrian/go-wire/v3"
 )
 
 func TestJSONAndXMLRoundTripsPreserveUnitMetadata(t *testing.T) {

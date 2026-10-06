@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/faustbrian/go-math/decimal"
-	measurement "github.com/faustbrian/go-measurement/v2"
+	measurement "github.com/faustbrian/go-measurement/v3"
 )
 
 func BenchmarkConvertMetresToFeet(b *testing.B) {

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/faustbrian/go-wire"
+	"github.com/faustbrian/go-wire/v3"
 )
 
 func TestSanitizedJSONWireErrorPreservesClassWithoutTypedPayload(t *testing.T) {

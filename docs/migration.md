@@ -31,6 +31,41 @@ Keep passing `ConversionContext` separately; it owns arithmetic precision,
 rounding, and limits, not cancellation. There is no required migration for
 callers that intentionally retain the detached v1 behavior.
 
+## Adopt Measurement v3 and Wire v3 together
+
+V3 changes the root import to `github.com/faustbrian/go-measurement/v3` and
+uses the public `github.com/faustbrian/go-wire/v3@v3.0.0` dependency. Update
+measurement imports, both adapter paths, and Wire imports together:
+
+```go
+import (
+    measurement "github.com/faustbrian/go-measurement/v3"
+    measurementwire "github.com/faustbrian/go-measurement/v3/adapters/wire"
+    "github.com/faustbrian/go-wire/v3"
+)
+```
+
+The adapter's `Encode` and `Decode` signatures now take Wire v3's nominal
+`wire.Format` type. Classify returned errors using Wire v3 sentinels and
+`errors.As` with `*wire.Error` from the same import. Wire v1/v2 types and
+sentinels are different identities and cannot substitute for v3's contracts.
+The selected formats remain JSON and XML; quantity fields, decimal scale,
+unit metadata, caller byte limits, bounded XML entrypoints, and redacted
+diagnostics retain their existing contracts. Wire v3's top-level error text
+is a fixed class rather than detailed diagnostic text; use sentinel matching
+for classification, not error strings.
+
+`github.com/faustbrian/go-measurement/v3/measurementwire` remains a distinct
+delegating facade with its own named `Options` type; it is not a type alias
+for `adapters/wire.Options`. This major migration does not remove the facade.
+The earliest permitted removal remains a future major release and never
+before 2027-03-08.
+
+Existing v1/v2 consumers can coexist with v3 and do not change automatically.
+Owned v1 consumers `go-knapsack` and `go-rule-engine/adapters/measurement`
+must retain the bounded-XML migration and consumer verification described
+below when they explicitly adopt the new major.
+
 ## Replace raw XML unmarshalling
 
 This migration applies to the published
