@@ -3,6 +3,17 @@
 All notable changes follow Keep a Changelog. The project uses semantic
 versioning.
 
+## 3.0.1 - 2026-10-07
+
+This entry describes the v3.0.1 release source. Adoption requires the public
+tag and module artifacts; the date alone does not establish publication.
+
+### Changed
+
+- Select `go-math` v1.1.3 for compatible dependency maintenance, retaining
+  Measurement's exact arithmetic, unit, conversion, persistence, bounded wire,
+  and cancellation contracts.
+
 ## 3.0.0 - 2026-10-06
 
 This entry describes the v3.0.0 release source. Adoption requires the public
