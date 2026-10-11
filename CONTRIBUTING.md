@@ -79,10 +79,21 @@ API baseline, canonical units, exact ratios, carrier fixtures, docs and
 benchmarks. Preserve all pinned fixture/source authority. Select directly
 affected public consumers and relevant release qualification, including
 `golib release check` and `golib release dry-run --all`, when their contract
-changes. Full campaigns remain available for selected scheduled or release
-risks; ordinary scheduled CI stays bounded and separately monitors sources
-online. Report unavailable or failing checks without claiming release
+changes. Full campaigns remain explicit manual or release assurance;
+ordinary scheduled CI stays bounded and separately monitors sources online.
+Report unavailable or failing checks without claiming release
 readiness. CI/configuration-only changes do not require a library release.
+
+## Selected Assurance
+
+No periodic fuzz or mutation exploration is configured. Deterministic parser
+seeds and changed-causal PR smoke cover the affected text/JSON/XML-SQL inputs;
+focused manual exploration remains available through the commands above.
+Canonical-unit, exact-ratio and carrier fixtures address the numerical contract,
+while the named context-isolation race addresses concurrent calls. A rotating
+parser campaign would not strengthen those authority or concurrency proofs.
+Select relevant fixtures, consumers and explicit full/release checks for their
+material risk rather than repeating every campaign after unchanged inputs.
 
 ## Adding A Module
 
