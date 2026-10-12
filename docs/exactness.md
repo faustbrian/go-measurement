@@ -7,8 +7,12 @@ uses the exact affine ratio `(F + 459.67) * 5 / 9` before rounding.
 
 `ExactConversion()` rejects a non-terminating base-10 quotient with the shared
 `math` conversion error. `RoundedConversion(scale, mode)` combines the full
-source-to-target ratio and rounds exactly once at the requested fractional
-scale. The zero `ConversionContext` is invalid, preventing ambient defaults.
+source-to-target quotient and rounds it once at the requested fractional
+scale before subtracting any target affine offset. Same-unit conversion returns
+the original amount without quantizing; use `Quantity.RoundContext` for a final
+amount scale. Composed arithmetic and logistics formulas may round separately
+at each conversion or division boundary, not once across the whole formula.
+The zero `ConversionContext` is invalid, preventing ambient defaults.
 
 `Quantity.RoundContext` quantizes an existing amount. `FormatContext` first
 converts with its conversion context and then quantizes with its independent

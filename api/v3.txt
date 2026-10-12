@@ -1,14 +1,31 @@
 package measurement // import "github.com/faustbrian/go-measurement/v3"
 
 Package measurement provides immutable exact logistics quantities with explicit
-units, dimensions, conversion policy, and arithmetic bounds.
+units, dimensions, conversion policy and arithmetic bounds. Start with New or
+Parse using SymbolProfile, then choose ExactConversion or RoundedConversion for
+compatible-unit operations.
 
-Decimal arithmetic is owned by github.com/faustbrian/go-math/decimal.
-Core quantities never convert through float32 or float64. Conversions either
-require an exact terminating result or an explicit scale and rounding mode.
-Context-suffixed operations propagate caller cancellation; their v1 counterparts
-without that suffix retain detached compatibility behavior. Loading metres
-remain semantically distinct from ordinary lengths.
+Decimal arithmetic is owned by github.com/faustbrian/go-math/decimal; core
+quantities never convert through binary floating point. The closed unit catalog
+uses exact source-defined ratios; loading metres remain semantically distinct
+from ordinary lengths. Absolute temperatures can be converted and compared,
+but addition/subtraction reject unmodeled temperature intervals. Negative and
+zero amounts are allowed in Quantity; logistics constructors separately require
+positive dimensions and formula inputs.
+
+Quantity, Dimensions, conversion policies and Profiles can be shared for
+concurrent value operations. Pointer decoding methods replace their receiver
+only on success and require exclusive caller ownership during mutation.
+Context-suffixed operations require a non-nil context, check cancellation before
+other arguments and do not retain it. They return no partial result after an
+observed error; cancellation does not forcibly interrupt a decimal primitive.
+Methods without the suffix use context.Background().
+
+No package introduces cgo, external services or background work. The package
+does not infer units/locale, select carrier tariffs, pack cargo or own database
+transactions. The adapters/wire package handles bounded JSON/XML codecs;
+measurementwire retains the deprecated compatibility facade. Use the bounded XML
+parse functions rather than raw encoding/xml unmarshalling.
 
 CONSTANTS
 
@@ -38,12 +55,17 @@ var (
 	// ErrInvalidQuantity reports malformed, nonpositive, or unbounded input.
 	ErrInvalidQuantity = errors.New("measurement: invalid quantity")
 	// ErrMalformedXML distinguishes XML tokenization failures from validation.
-	ErrMalformedXML         = errors.New("measurement: malformed XML")
-	ErrUnknownUnit          = errors.New("measurement: unknown unit")
-	ErrDimensionMismatch    = errors.New("measurement: dimension mismatch")
+	ErrMalformedXML = errors.New("measurement: malformed XML")
+	// ErrUnknownUnit reports a symbol outside the closed unit catalog or alias policy.
+	ErrUnknownUnit = errors.New("measurement: unknown unit")
+	// ErrDimensionMismatch reports incompatible units or a wrong formula-input dimension.
+	ErrDimensionMismatch = errors.New("measurement: dimension mismatch")
+	// ErrUnsupportedDimension reports a derived result outside the closed model.
 	ErrUnsupportedDimension = errors.New("measurement: unsupported dimension")
-	ErrAffineArithmetic     = errors.New("measurement: affine temperature arithmetic")
-	ErrInvalidContext       = errors.New("measurement: invalid conversion context")
+	// ErrAffineArithmetic reports addition/subtraction of absolute temperatures.
+	ErrAffineArithmetic = errors.New("measurement: affine temperature arithmetic")
+	// ErrInvalidContext reports absent or invalid conversion/rounding policy.
+	ErrInvalidContext = errors.New("measurement: invalid conversion context")
 	// ErrUnboundedXML reports use of encoding/xml's callback API, which cannot
 	// impose a byte limit before the decoder allocates the current token.
 	ErrUnboundedXML = errors.New("measurement: unbounded XML decoder")
@@ -58,17 +80,28 @@ type ConversionContext struct {
 	// Has unexported fields.
 }
     ConversionContext makes exact versus rounded conversion an explicit caller
-    choice.
+    choice. It is an immutable arithmetic policy, not an operation context;
+    values can be reused concurrently. Its zero value is invalid. Rounding
+    applies at each conversion/division boundary, not once across a composed
+    formula.
 
 func ExactConversion() ConversionContext
-    ExactConversion returns a context that rejects non-terminating quotients.
+    ExactConversion returns a policy using go-math defaults that rejects
+    non-terminating base-ten quotients with go-math.ErrConversion. Terminating
+    results can still exceed resource limits; exactness is not unbounded
+    precision.
 
 func RoundedConversion(scale int32, mode decimal.RoundingMode) ConversionContext
     RoundedConversion returns a context that rounds the combined final ratio at
-    scale fractional places.
+    scale fractional places, before subtracting a target affine offset. Negative
+    scales round to powers of ten. Validation occurs when used: invalid scales,
+    rounding modes or limits return ErrInvalidContext. Same-unit conversion is a
+    no-op and does not quantize; use Quantity.Round for final display scale.
 
 func (c ConversionContext) WithLimits(limits gomath.Limits) ConversionContext
-    WithLimits returns a copy using explicit arithmetic resource limits.
+    WithLimits returns a copy using explicit arithmetic resource limits. Zero
+    limits select go-math defaults; nonzero limits are validated when used. New
+    and explicit Quantity.Round still use their own default admission limits.
 
 type Dimension uint8
     Dimension is a closed physical-dimension identity. Loading metre has a
@@ -77,28 +110,49 @@ type Dimension uint8
 const (
 	// Dimensionless identifies ratios and counts with unit one.
 	Dimensionless Dimension = iota
+	// LengthDimension identifies ordinary lengths, distinct from loading metres.
 	LengthDimension
+	// AreaDimension identifies squared length.
 	AreaDimension
+	// VolumeDimension identifies cubed length.
 	VolumeDimension
+	// MassDimension identifies mass, not gravitational force.
 	MassDimension
+	// TemperatureDimension identifies absolute temperatures, not intervals.
 	TemperatureDimension
+	// DensityDimension identifies mass per volume.
 	DensityDimension
+	// LoadingMetreDimension identifies occupied loading-floor length and
+	// does not participate in general derived-dimensional arithmetic.
 	LoadingMetreDimension
 )
     Supported dimensions form the closed physical ontology.
 
 func (d Dimension) String() string
+    String returns the stable dimension name, or Dimension(n) for an unsupported
+    identity. The zero Dimension is Dimensionless, not an invalid sentinel.
 
 type Dimensions struct {
 	// Has unexported fields.
 }
-    Dimensions is an immutable rectangular package triple and package count.
+    Dimensions is a rectangular package triple and count retaining each side
+    in its original unit. Value operations are immutable and safe to share;
+    pointer JSON decoding needs exclusive ownership. Its zero value is not a
+    usable package. Formula methods do not orient/pack cargo or select tariffs.
 
 func NewDimensions(length, width, height Quantity, quantity uint64) (Dimensions, error)
-    NewDimensions validates a positive rectangular triple and bounded count.
+    NewDimensions validates three positive length quantities (mixed length units
+    are allowed) and quantity in [1, MaxPackageQuantity]. Wrong dimensions match
+    ErrDimensionMismatch; nonpositive sides/counts match ErrInvalidQuantity.
+    No side is converted or rounded. It returns no partial triple on failure.
 
 func ParseDimensionsXML(data []byte) (Dimensions, error)
-    ParseDimensionsXML parses one strict, byte-bounded dimensions XML document.
+    ParseDimensionsXML parses a canonical dimensions document under the same
+    byte/token/depth and restricted XML policy as ParseQuantityXML. It validates
+    positive length sides and bounded count, preserving original unit metadata.
+    Syntax failures match ErrMalformedXML and ErrInvalidQuantity; value failures
+    preserve unit/dimension classification. Input is not retained and failure
+    returns the zero Dimensions. It performs no transport I/O.
 
 func (d Dimensions) CubicVolume(target Unit, conversion ConversionContext) (Quantity, error)
     CubicVolume returns length multiplied by width and height in target without
@@ -110,7 +164,9 @@ func (d Dimensions) CubicVolumeContext(
 	conversion ConversionContext,
 ) (Quantity, error)
     CubicVolumeContext returns length multiplied by width and height in target
-    under caller cancellation.
+    under caller cancellation. Target must be a volume unit. The result is per
+    package; use TotalVolumeContext to include count. The policy is applied at
+    individual conversion boundaries, not once across the entire formula.
 
 func (d Dimensions) FloorArea(target Unit, conversion ConversionContext) (Quantity, error)
     FloorArea returns length multiplied by width in target without caller
@@ -122,7 +178,9 @@ func (d Dimensions) FloorAreaContext(
 	conversion ConversionContext,
 ) (Quantity, error)
     FloorAreaContext returns length multiplied by width in target under caller
-    cancellation.
+    cancellation. Target must be an area unit. This is one package's footprint,
+    not multiplied by the package count. Conversion policy applies to operand
+    conversions and then the result; it is not a single formula-wide rounding.
 
 func (d Dimensions) Height() Quantity
     Height returns the original immutable height quantity.
@@ -145,13 +203,22 @@ func (d Dimensions) LoadingMetresContext(
 	stacking StackingFactor,
 	conversion ConversionContext,
 ) (Quantity, error)
-    LoadingMetresContext calculates loading metres under caller cancellation.
+    LoadingMetresContext calculates (length * width / truck width / stacking)
+    times package quantity in LoadingMetre under caller cancellation.
+    It ignores height and uses explicitly constructed positive formula inputs.
+    Rounded policy applies separately to conversions and divisions; it does
+    not guarantee one final rounding for the entire formula. Carrier rounding
+    and orientation are caller policy (MEASUREMENT-DEC-006, carrier snapshots
+    2026-08-30).
 
 func (d Dimensions) MarshalJSON() ([]byte, error)
     MarshalJSON encodes every side's value and unit plus package quantity.
 
 func (d Dimensions) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error
     MarshalXML encodes every side's value and unit plus package quantity.
+    Encoder must be non-nil and is caller-owned. Empty/default start names
+    become dimensions; other roots are honored but are not accepted by
+    ParseDimensionsXML.
 
 func (d Dimensions) Quantity() uint64
     Quantity returns the package count.
@@ -166,10 +233,17 @@ func (d Dimensions) TotalVolumeContext(
 	conversion ConversionContext,
 ) (Quantity, error)
     TotalVolumeContext multiplies one package's cubic volume by the package
-    count under caller cancellation.
+    count under caller cancellation. CubicVolumeContext converts to target
+    before the count is multiplied exactly; no final quantization is added after
+    counting.
 
 func (d *Dimensions) UnmarshalJSON(data []byte) error
-    UnmarshalJSON decodes and validates a complete dimension triple.
+    UnmarshalJSON decodes and validates a complete dimension triple within
+    MaxSerializedBytes, with strict duplicate/unknown-field and trailing-value
+    checks. Each side retains its unit. Nil receivers match ErrInvalidQuantity;
+    every failure preserves d. Input buffers are not retained.
+    The JSON redaction boundary has the same outer-encoding/json caveat as
+    Quantity.UnmarshalJSON.
 
 func (d *Dimensions) UnmarshalXML(_ *xml.Decoder, _ xml.StartElement) error
     UnmarshalXML fails closed because encoding/xml invokes this callback only
@@ -180,11 +254,17 @@ func (d Dimensions) Width() Quantity
     Width returns the original immutable width quantity.
 
 type FormatOptions struct {
-	Unit       Unit
+	// Unit is the required supported target symbol, not an inferred preference.
+	Unit Unit
+	// Conversion selects unit-conversion arithmetic before display quantization.
 	Conversion ConversionContext
-	Scale      int32
-	Rounding   decimal.RoundingMode
-	Separator  string
+	// Scale is the display quantization scale; negative values round to powers of ten.
+	Scale int32
+	// Rounding is the explicit display mode, independent of conversion rounding.
+	Rounding decimal.RoundingMode
+	// Separator is inserted literally; it must be valid UTF-8 of at most 16 bytes
+	// without carriage return, newline or NUL. Empty text is accepted.
+	Separator string
 }
     FormatOptions contains every conversion and display decision. No locale or
     preferred unit is inferred.
@@ -192,11 +272,17 @@ type FormatOptions struct {
 type Profile struct {
 	// Has unexported fields.
 }
-    Profile is an immutable explicit mapping of accepted unit tokens.
+    Profile is an immutable explicit mapping of accepted unit tokens, safe for
+    concurrent resolution. Its zero value resolves no aliases; no default or
+    locale policy is inferred.
 
 func NewProfile(aliases map[string]Unit) (Profile, error)
     NewProfile validates and defensively copies an explicit alias-to-unit
-    policy.
+    policy. Nil/empty input creates an empty profile. Alias count must not
+    exceed MaxProfileAliases; each alias must have 1..MaxAliasBytes bytes
+    and identify a supported unit. Alias text is kept exactly, without
+    case/whitespace normalization. Callers must not mutate the input map during
+    construction.
 
 func SymbolProfile() Profile
     SymbolProfile accepts only canonical unit symbols.
@@ -207,19 +293,42 @@ func (p Profile) Resolve(alias string) (Unit, error)
 type Quantity struct {
 	// Has unexported fields.
 }
-    Quantity is an immutable decimal amount with explicit unit identity.
+    Quantity is a decimal amount with explicit unit identity. Value operations
+    return new values and can run concurrently. Pointer decoder methods mutate
+    the receiver and require caller synchronization. The zero value has no unit;
+    construct values with New or Parse. Numeric zero/negative amounts are
+    allowed; physical validity and business positivity are not inferred from a
+    unit.
 
 func MustNew(amount decimal.Decimal, unit Unit) Quantity
-    MustNew constructs a trusted quantity and panics for an unknown unit.
+    MustNew constructs a trusted quantity and panics with any error returned by
+    New, including unknown units and amount resource limits. Use New for input
+    requiring returned validation errors.
 
 func New(amount decimal.Decimal, unit Unit) (Quantity, error)
-    New validates unit and constructs an immutable quantity.
+    New validates unit and default go-math amount limits, preserving represented
+    scale without rounding or normalization. Unknown units match ErrUnknownUnit;
+    amount-limit failures match ErrInvalidQuantity and the go-math cause.
+    It does not reject signed/zero amounts or temperatures below absolute zero.
 
 func Parse(input string, profile Profile) (Quantity, error)
-    Parse parses strict amount-space-unit text under profile.
+    Parse parses decimal amount, ASCII space and exact alias text under profile.
+    It rejects surrounding whitespace and text over MaxTextBytes; profiles do
+    not infer missing units or canonical aliases. Decimal syntax/resource errors
+    wrap ErrInvalidQuantity and the go-math cause; unsupported aliases match
+    ErrUnknownUnit. Signed and zero amounts are accepted. Failure returns the
+    zero Quantity.
 
 func ParseQuantityXML(data []byte) (Quantity, error)
-    ParseQuantityXML parses one strict, byte-bounded quantity XML document.
+    ParseQuantityXML parses one canonical quantity XML document within
+    MaxSerializedBytes, MaxXMLDepth and MaxXMLTokens. Scalar amounts/units
+    obey MaxTextBytes/MaxAliasBytes. Attributes, namespaces, references,
+    comments, directives, nested scalars and trailing documents are rejected.
+    Only the optional canonical XML 1.0 declaration is accepted. Nil/empty input
+    is an error. Syntax failures match ErrMalformedXML and ErrInvalidQuantity;
+    value errors preserve unit/dimension classification without echoing input.
+    Data is not retained; failure returns the zero Quantity. Bound transport
+    reads upstream.
 
 func (q Quantity) Add(other Quantity, conversion ConversionContext) (Quantity, error)
     Add converts other into q's unit and returns their exact sum without caller
@@ -230,8 +339,10 @@ func (q Quantity) AddContext(
 	other Quantity,
 	conversion ConversionContext,
 ) (Quantity, error)
-    AddContext converts other into q's unit and returns their exact sum under
-    caller cancellation.
+    AddContext converts other into q's unit and returns their exact sum
+    under caller cancellation. The conversion may round other first;
+    addition itself is exact and retains q's unit. Absolute temperatures return
+    ErrAffineArithmetic.
 
 func (q Quantity) Amount() decimal.Decimal
     Amount returns the immutable decimal amount.
@@ -246,7 +357,8 @@ func (q Quantity) ClampContext(
 	conversion ConversionContext,
 ) (Quantity, error)
     ClampContext restricts q to an inclusive compatible interval under caller
-    cancellation.
+    cancellation. Both bounds are converted to q's unit first, potentially with
+    rounding; a reversed converted interval returns decimal.ErrInvalid.
 
 func (q Quantity) Compare(other Quantity, conversion ConversionContext) (int, error)
     Compare converts other into q's unit and compares numeric amounts without
@@ -254,7 +366,8 @@ func (q Quantity) Compare(other Quantity, conversion ConversionContext) (int, er
 
 func (q Quantity) CompareContext(ctx context.Context, other Quantity, conversion ConversionContext) (int, error)
     CompareContext converts other into q's unit and compares numeric amounts
-    under caller cancellation.
+    under caller cancellation. It returns -1, 0 or +1; the comparison reflects
+    any rounding used to convert other and is meaningful only when err is nil.
 
 func (q Quantity) Convert(target Unit, conversion ConversionContext) (Quantity, error)
     Convert converts q into target without caller cancellation.
@@ -266,8 +379,15 @@ func (q Quantity) ConvertContext(
 	target Unit,
 	conversion ConversionContext,
 ) (Quantity, error)
-    ConvertContext converts q into target under caller cancellation and an
-    explicit conversion policy.
+    ConvertContext converts q into target under caller cancellation and
+    an explicit conversion policy. Context admission precedes policy/unit
+    validation: nil ctx wraps go-math.ErrInvalidArgument, while observed
+    cancellation/deadline errors are returned unchanged. Unsupported units
+    and dimension mismatches fail without a partial result. A same-unit target
+    returns q after policy validation, without quantizing or rechecking amount
+    against caller limits. Other conversions round only the combined quotient;
+    target affine-offset subtraction follows that boundary and can leave a
+    different represented scale.
 
 func (q Quantity) Dimension() (Dimension, error)
     Dimension returns the unit's physical dimension.
@@ -281,22 +401,32 @@ func (q Quantity) DivideContext(
 	other Quantity,
 	conversion ConversionContext,
 ) (Quantity, error)
-    DivideContext returns a supported canonical derived quantity under caller
-    cancellation.
+    DivideContext returns a supported canonical derived quantity under
+    caller cancellation. Operands are separately converted to canonical
+    units before the final quotient uses conversion. Division by zero
+    matches go-math.ErrDivisionByZero; unmodeled dimensions return
+    ErrUnsupportedDimension.
 
 func (q Quantity) Equal(other Quantity, conversion ConversionContext) (bool, error)
     Equal reports numeric equality without caller cancellation.
 
 func (q Quantity) EqualContext(ctx context.Context, other Quantity, conversion ConversionContext) (bool, error)
     EqualContext reports numeric equality after explicit compatible-unit
-    conversion under caller cancellation.
+    conversion under caller cancellation. Rounded conversion can equate
+    distinct source amounts; use exact conversion when equality must not discard
+    precision.
 
 func (q Quantity) Format(options FormatOptions) (string, error)
     Format converts, rounds, and formats a quantity without caller cancellation.
 
 func (q Quantity) FormatContext(ctx context.Context, options FormatOptions) (string, error)
     FormatContext converts, rounds, and formats a quantity under caller
-    cancellation and explicit options.
+    cancellation and explicit options. It first performs the chosen unit
+    conversion and then independently quantizes for display, so two rounding
+    boundaries can occur. Invalid formatting options match ErrInvalidQuantity;
+    conversion/quantization errors retain their classifications. Failure returns
+    empty text and leaves q unchanged. Output is not canonical parser input when
+    Separator differs from a single space.
 
 func (q Quantity) MarshalJSON() ([]byte, error)
     MarshalJSON encodes value and unit metadata with the decimal as a string.
@@ -306,6 +436,9 @@ func (q Quantity) MarshalText() ([]byte, error)
 
 func (q Quantity) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error
     MarshalXML encodes value and unit metadata without numeric narrowing.
+    Encoder must be non-nil; its I/O and lifecycle belong to the caller.
+    Empty/default start names become quantity; custom names are honored but
+    cannot be read by ParseQuantityXML, which requires the canonical root.
 
 func (q Quantity) Multiply(other Quantity, conversion ConversionContext) (Quantity, error)
     Multiply returns a supported canonical derived quantity without caller
@@ -316,8 +449,11 @@ func (q Quantity) MultiplyContext(
 	other Quantity,
 	conversion ConversionContext,
 ) (Quantity, error)
-    MultiplyContext returns a supported canonical derived quantity under caller
-    cancellation.
+    MultiplyContext returns a supported canonical derived quantity under
+    caller cancellation. Operands are converted separately to canonical units
+    using conversion, then multiplied exactly. Rounded conversions therefore
+    need not preserve exact algebraic identities. Unmodeled results return
+    ErrUnsupportedDimension.
 
 func (q Quantity) Round(scale int32, mode decimal.RoundingMode) (Quantity, error)
     Round quantizes q at scale fractional places without caller cancellation.
@@ -328,12 +464,22 @@ func (q Quantity) RoundContext(
 	mode decimal.RoundingMode,
 ) (Quantity, error)
     RoundContext quantizes q at scale fractional places under caller
-    cancellation.
+    cancellation. Negative scales round to powers of ten; scale/mode and
+    resource errors come from go-math. This only quantizes the amount and
+    retains the stored unit without validating it, including an absent
+    zero-value unit.
 
 func (q *Quantity) Scan(source any) error
-    Scan reads lossless JSON text from a SQL driver.
+    Scan reads lossless JSON text from a SQL driver. Only string/[]byte input
+    is accepted; SQL NULL and other types match ErrInvalidQuantity. Byte
+    lengths are checked against MaxSerializedBytes before copying; the driver's
+    materialization cost is outside this boundary. Nil receivers fail through
+    UnmarshalJSON; every error preserves q and successful decoding retains no
+    input buffer.
 
 func (q Quantity) String() string
+    String returns represented decimal text, one space and the stored symbol.
+    It does not validate the unit; the absent zero value therefore renders "0 ".
 
 func (q Quantity) Subtract(other Quantity, conversion ConversionContext) (Quantity, error)
     Subtract converts other into q's unit and returns their exact difference
@@ -345,7 +491,9 @@ func (q Quantity) SubtractContext(
 	conversion ConversionContext,
 ) (Quantity, error)
     SubtractContext converts other into q's unit and returns their exact
-    difference under caller cancellation.
+    difference under caller cancellation. Other is converted (and may be
+    rounded) first; subtraction is exact and retains q's unit. Absolute
+    temperatures return ErrAffineArithmetic.
 
 func (q Quantity) Times(count uint64) (Quantity, error)
     Times multiplies an amount by a bounded positive package count without
@@ -353,16 +501,26 @@ func (q Quantity) Times(count uint64) (Quantity, error)
 
 func (q Quantity) TimesContext(ctx context.Context, count uint64) (Quantity, error)
     TimesContext multiplies an amount by a bounded positive package count under
-    caller cancellation.
+    caller cancellation. Count must be in [1, MaxPackageQuantity] or return
+    ErrInvalidQuantity. It retains the stored unit without validating it and
+    uses default arithmetic limits, independent of a ConversionContext.
 
 func (q Quantity) Unit() Unit
     Unit returns the quantity's unit identity.
 
 func (q *Quantity) UnmarshalJSON(data []byte) error
-    UnmarshalJSON decodes one bounded strict quantity object.
+    UnmarshalJSON decodes one quantity object within MaxSerializedBytes,
+    rejecting duplicate/unknown fields, trailing values, numeric amounts
+    and invalid units or decimals. Nil receivers match ErrInvalidQuantity.
+    It replaces q only on complete success and retains no data buffer.
+    Returned JSON diagnostics are redacted, but encoding/json may fail before
+    calling this method; those outer errors remain caller-owned. Use errors.Is
+    for classification.
 
 func (q *Quantity) UnmarshalText(text []byte) error
-    UnmarshalText parses canonical text with SymbolProfile.
+    UnmarshalText parses canonical text with SymbolProfile. Nil receivers match
+    ErrInvalidQuantity. Failure preserves q; successful replacement retains no
+    text buffer. It does not accept caller-specific profile aliases.
 
 func (q *Quantity) UnmarshalXML(_ *xml.Decoder, _ xml.StartElement) error
     UnmarshalXML fails closed because encoding/xml invokes this callback only
@@ -377,10 +535,15 @@ type StackingFactor struct {
 	// Has unexported fields.
 }
     StackingFactor is the positive number of equivalent floor positions shared
-    by stacked packages. One means not stackable.
+    by stacked packages. One means not stackable. Positive fractional factors
+    are admitted; actual stackability remains caller policy. The zero value is
+    invalid and using it as a formula divisor returns a division-by-zero error.
 
 func NewStackingFactor(factor decimal.Decimal) (StackingFactor, error)
-    NewStackingFactor validates a positive stacking divisor.
+    NewStackingFactor validates a positive stacking divisor under default
+    decimal limits. Nonpositive factors match ErrInvalidQuantity; limit errors
+    also retain the go-math cause. The factor is not restricted to integer
+    counts.
 
 func (s StackingFactor) Decimal() decimal.Decimal
     Decimal returns the exact stacking factor.
@@ -388,7 +551,9 @@ func (s StackingFactor) Decimal() decimal.Decimal
 type TruckWidth struct {
 	// Has unexported fields.
 }
-    TruckWidth is a validated positive vehicle interior width.
+    TruckWidth is a validated positive vehicle interior width selected by the
+    caller, not a universal vehicle constant. Its zero value has no usable
+    width.
 
 func NewTruckWidth(width Quantity) (TruckWidth, error)
     NewTruckWidth validates a positive length quantity.
@@ -397,68 +562,109 @@ func (t TruckWidth) Quantity() Quantity
     Quantity returns the configured width quantity.
 
 type Unit string
-    Unit is a stable identity for a supported measurement unit.
+    Unit is a stable catalog symbol. A cast from string does not validate it;
+    Dimension and quantity constructors reject unknown symbols with
+    ErrUnknownUnit. Symbols are case-sensitive ASCII wire identifiers, not
+    localized typography.
 
 const (
 	// One is the canonical dimensionless unit.
 	One Unit = "1"
 
+	// Millimetre is a length of one thousandth of a metre.
 	Millimetre Unit = "mm"
+	// Centimetre is a length of one hundredth of a metre.
 	Centimetre Unit = "cm"
-	Metre      Unit = "m"
-	Kilometre  Unit = "km"
-	Inch       Unit = "in"
-	Foot       Unit = "ft"
-	Yard       Unit = "yd"
+	// Metre is the canonical length unit.
+	Metre Unit = "m"
+	// Kilometre is a length of one thousand metres.
+	Kilometre Unit = "km"
+	// Inch is the international inch, exactly 0.0254 metres.
+	Inch Unit = "in"
+	// Foot is the international foot, exactly 0.3048 metres.
+	Foot Unit = "ft"
+	// Yard is the international yard, exactly 0.9144 metres.
+	Yard Unit = "yd"
 
+	// SquareMillimetre is area measured in squared millimetres.
 	SquareMillimetre Unit = "mm2"
+	// SquareCentimetre is area measured in squared centimetres.
 	SquareCentimetre Unit = "cm2"
-	SquareMetre      Unit = "m2"
-	SquareInch       Unit = "in2"
-	SquareFoot       Unit = "ft2"
+	// SquareMetre is the canonical area unit.
+	SquareMetre Unit = "m2"
+	// SquareInch is area measured in squared international inches.
+	SquareInch Unit = "in2"
+	// SquareFoot is area measured in squared international feet.
+	SquareFoot Unit = "ft2"
 
+	// CubicMillimetre is volume measured in cubed millimetres.
 	CubicMillimetre Unit = "mm3"
+	// CubicCentimetre is volume measured in cubed centimetres.
 	CubicCentimetre Unit = "cm3"
-	CubicMetre      Unit = "m3"
-	Millilitre      Unit = "mL"
-	Litre           Unit = "L"
-	CubicInch       Unit = "in3"
-	CubicFoot       Unit = "ft3"
+	// CubicMetre is the canonical volume unit.
+	CubicMetre Unit = "m3"
+	// Millilitre is exactly one cubic centimetre.
+	Millilitre Unit = "mL"
+	// Litre is exactly one thousandth of a cubic metre.
+	Litre Unit = "L"
+	// CubicInch is volume measured in cubed international inches.
+	CubicInch Unit = "in3"
+	// CubicFoot is volume measured in cubed international feet.
+	CubicFoot Unit = "ft3"
 
+	// Milligram is mass measured in millionths of a kilogram.
 	Milligram Unit = "mg"
-	Gram      Unit = "g"
-	Kilogram  Unit = "kg"
-	Tonne     Unit = "t"
-	Ounce     Unit = "oz"
-	Pound     Unit = "lb"
+	// Gram is mass measured in thousandths of a kilogram.
+	Gram Unit = "g"
+	// Kilogram is the canonical mass unit.
+	Kilogram Unit = "kg"
+	// Tonne is exactly one thousand kilograms.
+	Tonne Unit = "t"
+	// Ounce is the avoirdupois ounce, exactly 0.028349523125 kilograms.
+	Ounce Unit = "oz"
+	// Pound is the avoirdupois pound, exactly 0.45359237 kilograms.
+	Pound Unit = "lb"
 
-	Kelvin     Unit = "K"
-	Celsius    Unit = "degC"
+	// Kelvin is the canonical absolute-temperature unit.
+	Kelvin Unit = "K"
+	// Celsius is an absolute scale with kelvin = value + 273.15.
+	Celsius Unit = "degC"
+	// Fahrenheit is an absolute scale with kelvin = (value + 459.67) * 5/9.
 	Fahrenheit Unit = "degF"
 
-	KilogramPerCubicMetre  Unit = "kg/m3"
+	// KilogramPerCubicMetre is the canonical density unit.
+	KilogramPerCubicMetre Unit = "kg/m3"
+	// GramPerCubicCentimetre is density equal to 1000 kilograms per cubic metre.
 	GramPerCubicCentimetre Unit = "g/cm3"
 
+	// LoadingMetre is the semantic loading-floor unit, not ordinary Metre.
 	LoadingMetre Unit = "ldm"
 )
     Supported units carry stable symbols and dimension identity.
 
 func Units(dimension Dimension) []Unit
-    Units returns a sorted copy of every supported unit for dimension.
+    Units returns a caller-owned slice of supported symbols sorted lexically
+    for dimension, or nil for an unsupported dimension. Mutating it cannot alter
+    catalog policy.
 
 func (u Unit) Dimension() (Dimension, error)
     Dimension reports the unit's physical dimension.
 
 func (u Unit) String() string
+    String returns the stored symbol without validating or normalizing it.
 
 type VolumetricDivisor struct {
 	// Has unexported fields.
 }
     VolumetricDivisor is a positive volume-per-kilogram carrier input with an
-    explicit volume unit, for example 5000 cm3/kg.
+    explicit volume unit, for example 5000 cm3/kg. No carrier or effective date
+    is inferred. Its zero value has no usable volume unit.
 
 func NewVolumetricDivisor(volumePerKilogram decimal.Decimal, volumeUnit Unit) (VolumetricDivisor, error)
-    NewVolumetricDivisor validates a positive volume-per-kilogram divisor.
+    NewVolumetricDivisor validates a positive volume-per-kilogram divisor under
+    default decimal limits. volumeUnit must identify a supported volume unit,
+    otherwise ErrUnknownUnit or ErrDimensionMismatch is returned; positivity and
+    decimal admission failures match ErrInvalidQuantity.
 
 func (d VolumetricDivisor) VolumePerKilogram() decimal.Decimal
     VolumePerKilogram returns the exact divisor amount.
@@ -476,13 +682,17 @@ func (d VolumetricDivisor) WeightContext(
 	conversion ConversionContext,
 ) (Quantity, error)
     WeightContext calculates dimensional weight in kilograms under caller
-    cancellation.
+    cancellation. Volume is converted to the divisor's explicit volume unit
+    and then divided, each using conversion. No positivity check is applied
+    to volume, so signed/zero input yields arithmetic signed/zero output,
+    not tariff policy.
 
 type VolumetricIndex struct {
 	// Has unexported fields.
 }
     VolumetricIndex is a positive mass-per-volume factor, usually expressed as
-    kilograms per cubic metre.
+    kilograms per cubic metre. The factor belongs to the caller's tariff policy;
+    its zero value has no usable density quantity.
 
 func NewVolumetricIndex(density Quantity) (VolumetricIndex, error)
     NewVolumetricIndex validates a positive density quantity.
@@ -500,36 +710,57 @@ func (i VolumetricIndex) WeightContext(
 	conversion ConversionContext,
 ) (Quantity, error)
     WeightContext multiplies the index by a volume and returns canonical
-    kilograms under caller cancellation.
+    kilograms under caller cancellation. Volume must have the volume dimension,
+    but signed/zero volume is accepted. Canonical operand conversion and
+    arithmetic follow conversion independently; this does not select
+    billable/actual weight.
 
 package measurementwire // import "github.com/faustbrian/go-measurement/v3/adapters/wire"
 
 Package measurementwire adapts Quantity to bounded wire JSON and XML codecs
-while preserving decimal and unit metadata.
+while preserving decimal and unit metadata. Start with Encode/Decode and an
+explicitly selected Wire v3 format. This package does not infer a format,
+own transport I/O or authenticate documents. Calls are stateless and can run
+concurrently; payloads must not be mutated during decoding and are not retained.
+No cgo, external service or background lifecycle is introduced.
 
 FUNCTIONS
 
 func Decode(payload []byte, format wire.Format, options Options) (measurement.Quantity, error)
     Decode parses exactly one bounded quantity document in an explicitly
-    selected supported format. The returned Quantity does not retain payload.
+    selected JSON/XML format. The returned Quantity does not retain payload.
+    Unsupported formats match wire.ErrUnsupportedFormat. Codec size failures
+    match wire.ErrSizeLimit; XML core syntax errors match wire.ErrParse and core
+    schema/value errors match wire.ErrValidation. JSON follows the selected
+    codec classification, with redacted causes and sanitized type-error
+    metadata. All errors return the zero Quantity. Bound transport input before
+    materializing it.
 
 func Encode(quantity measurement.Quantity, format wire.Format, options Options) ([]byte, error)
-    Encode serializes quantity in an explicitly selected supported format.
+    Encode serializes quantity as JSON or XML, preserving decimal text and unit.
+    Other formats return an error matching wire.ErrUnsupportedFormat. The byte
+    ceiling governs encoding through the selected codec; returned bytes are
+    caller-owned. Errors retain Wire v3 classification.
 
 
 TYPES
 
 type Options struct {
+	// MaxBytes is the selected codec's byte ceiling; zero uses its defaults and
+	// negative values are invalid. Core decoding still enforces MaxSerializedBytes
+	// independently, so a larger codec ceiling does not widen the core schema.
 	MaxBytes int64
 }
     Options bounds encoded and decoded documents. Zero values retain the
-    selected wire codec's defaults. XML decoding also enforces measurement's
-    smaller core document ceiling.
+    selected wire codec's defaults. Core decoding independently enforces
+    measurement's document ceiling.
 
 package measurementwire // import "github.com/faustbrian/go-measurement/v3/measurementwire"
 
 Package measurementwire is the compatibility facade for the bounded measurement
-wire adapter.
+wire adapter. Encode and Decode delegate to adapters/wire without owning
+transport, resources or background work. Calls can run concurrently; payload
+buffers are not retained. No cgo or service dependency is introduced.
 
 Deprecated: use github.com/faustbrian/go-measurement/v3/adapters/wire,
 introduced in v1.1.0 with the same Options, Encode, and Decode usage.
@@ -540,18 +771,23 @@ FUNCTIONS
 
 func Decode(payload []byte, format wire.Format, options Options) (measurement.Quantity, error)
     Decode parses exactly one bounded quantity document in an explicitly
-    selected supported format.
+    selected JSON/XML format, preserving the successor's error and byte-limit
+    semantics. Failure returns the zero Quantity; payload is not retained.
 
 func Encode(quantity measurement.Quantity, format wire.Format, options Options) ([]byte, error)
-    Encode serializes quantity in an explicitly selected supported format.
+    Encode delegates JSON/XML serialization to adapters/wire.Encode, including
+    its byte budget and Wire v3 error classification. Returned bytes are
+    caller-owned.
 
 
 TYPES
 
 type Options struct {
+	// MaxBytes selects the codec byte ceiling. Zero uses its defaults; negative
+	// values are invalid. Core decoding keeps its own stricter document ceiling.
 	MaxBytes int64
 }
-    Options bounds encoded and decoded documents. XML decoding also enforces
-    measurement's smaller core document ceiling. Options remains a distinct
-    named compatibility type so reflection-based consumers retain the legacy
-    package identity.
+    Options bounds encoded and decoded documents. Core decoding independently
+    enforces measurement's document ceiling. Options remains a distinct named
+    compatibility type so reflection-based consumers retain the legacy package
+    identity.

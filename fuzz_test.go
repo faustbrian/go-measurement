@@ -7,6 +7,8 @@ import (
 	measurement "github.com/faustbrian/go-measurement/v3"
 )
 
+// FuzzParseAndTextRoundTrip checks hostile text through explicit SymbolProfile;
+// accepted values must round-trip numeric value and canonical unit identity.
 func FuzzParseAndTextRoundTrip(f *testing.F) {
 	for _, seed := range []string{"1 m", "-12.50 kg", "0 degC", "1e3 m", "", "1 unknown"} {
 		f.Add(seed)
@@ -31,6 +33,8 @@ func FuzzParseAndTextRoundTrip(f *testing.F) {
 	})
 }
 
+// FuzzQuantityJSON exercises hostile JSON and requires admitted quantities to
+// preserve exact amount/unit through re-encoding; outer JSON failures are rejected.
 func FuzzQuantityJSON(f *testing.F) {
 	for _, seed := range [][]byte{
 		[]byte(`{"value":"1.25","unit":"m"}`),
@@ -60,6 +64,8 @@ func FuzzQuantityJSON(f *testing.F) {
 	})
 }
 
+// FuzzQuantityXMLAndSQL checks bounded XML schema input; admitted quantities
+// must preserve amount/unit after JSON-backed SQL Value/Scan reconstruction.
 func FuzzQuantityXMLAndSQL(f *testing.F) {
 	for _, seed := range []string{
 		`<quantity><value>1.25</value><unit>m</unit></quantity>`,

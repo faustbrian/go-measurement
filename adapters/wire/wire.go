@@ -1,5 +1,10 @@
 // Package measurementwire adapts Quantity to bounded wire JSON and XML codecs
-// while preserving decimal and unit metadata.
+// while preserving decimal and unit metadata. Start with Encode/Decode and an
+// explicitly selected Wire v3 format. This package does not infer a format, own
+// transport I/O or authenticate documents. Calls are stateless and can run
+// concurrently; payloads must not be mutated during decoding and are not
+// retained. No cgo, external
+// service or background lifecycle is introduced.
 package measurementwire
 
 import (
@@ -14,13 +19,19 @@ import (
 )
 
 // Options bounds encoded and decoded documents. Zero values retain the
-// selected wire codec's defaults. XML decoding also enforces measurement's
-// smaller core document ceiling.
+// selected wire codec's defaults. Core decoding independently enforces
+// measurement's document ceiling.
 type Options struct {
+	// MaxBytes is the selected codec's byte ceiling; zero uses its defaults and
+	// negative values are invalid. Core decoding still enforces MaxSerializedBytes
+	// independently, so a larger codec ceiling does not widen the core schema.
 	MaxBytes int64
 }
 
-// Encode serializes quantity in an explicitly selected supported format.
+// Encode serializes quantity as JSON or XML, preserving decimal text and unit.
+// Other formats return an error matching wire.ErrUnsupportedFormat. The byte
+// ceiling governs encoding through the selected codec; returned bytes are
+// caller-owned. Errors retain Wire v3 classification.
 func Encode(quantity measurement.Quantity, format wire.Format, options Options) ([]byte, error) {
 	switch format {
 	case wire.FormatJSON:
@@ -36,7 +47,12 @@ func Encode(quantity measurement.Quantity, format wire.Format, options Options) 
 }
 
 // Decode parses exactly one bounded quantity document in an explicitly
-// selected supported format. The returned Quantity does not retain payload.
+// selected JSON/XML format. The returned Quantity does not retain payload.
+// Unsupported formats match wire.ErrUnsupportedFormat. Codec size failures
+// match wire.ErrSizeLimit; XML core syntax errors match wire.ErrParse and core
+// schema/value errors match wire.ErrValidation. JSON follows the selected codec
+// classification, with redacted causes and sanitized type-error metadata. All
+// errors return the zero Quantity. Bound transport input before materializing it.
 func Decode(payload []byte, format wire.Format, options Options) (measurement.Quantity, error) {
 	var quantity measurement.Quantity
 	var err error
@@ -75,18 +91,25 @@ func Decode(payload []byte, format wire.Format, options Options) (measurement.Qu
 	return quantity, nil
 }
 
+// Preserve sentinel classification without Unwrap: raw codec diagnostics can
+// disclose payload text. As exposes only a copy of supported type-error metadata
+// with the Value field redacted; syntax errors are deliberately not forwarded.
 type redactedJSONCause struct {
 	cause error
 }
 
+// Error renders a fixed classification without the original JSON diagnostic.
 func (e redactedJSONCause) Error() string {
 	return "invalid JSON payload"
 }
 
+// Is retains cause sentinel identity without exposing it through Unwrap.
 func (e redactedJSONCause) Is(target error) bool {
 	return errors.Is(e.cause, target)
 }
 
+// As returns a sanitized copy only for json.UnmarshalTypeError; original
+// syntax errors and unsupported typed causes are deliberately not forwarded.
 func (e redactedJSONCause) As(target any) bool {
 	result, ok := target.(**json.UnmarshalTypeError)
 	if !ok {

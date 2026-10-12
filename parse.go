@@ -16,12 +16,18 @@ const (
 	MaxProfileAliases = 1024
 )
 
-// Profile is an immutable explicit mapping of accepted unit tokens.
+// Profile is an immutable explicit mapping of accepted unit tokens, safe for
+// concurrent resolution. Its zero value resolves no aliases; no default or
+// locale policy is inferred.
 type Profile struct {
 	aliases map[string]Unit
 }
 
 // NewProfile validates and defensively copies an explicit alias-to-unit policy.
+// Nil/empty input creates an empty profile. Alias count must not exceed
+// MaxProfileAliases; each alias must have 1..MaxAliasBytes bytes and identify a
+// supported unit. Alias text is kept exactly, without case/whitespace normalization.
+// Callers must not mutate the input map during construction.
 func NewProfile(aliases map[string]Unit) (Profile, error) {
 	if len(aliases) > MaxProfileAliases {
 		return Profile{}, fmt.Errorf("%w: profile exceeds %d aliases", ErrInvalidQuantity, MaxProfileAliases)
@@ -69,7 +75,11 @@ func (p Profile) Resolve(alias string) (Unit, error) {
 	return unit, nil
 }
 
-// Parse parses strict amount-space-unit text under profile.
+// Parse parses decimal amount, ASCII space and exact alias text under profile.
+// It rejects surrounding whitespace and text over MaxTextBytes; profiles do not
+// infer missing units or canonical aliases. Decimal syntax/resource errors wrap
+// ErrInvalidQuantity and the go-math cause; unsupported aliases match ErrUnknownUnit.
+// Signed and zero amounts are accepted. Failure returns the zero Quantity.
 func Parse(input string, profile Profile) (Quantity, error) {
 	if len(input) > MaxTextBytes {
 		return Quantity{}, fmt.Errorf("%w: text exceeds %d bytes", ErrInvalidQuantity, MaxTextBytes)

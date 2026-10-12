@@ -11,7 +11,10 @@ import (
 // MaxPackageQuantity bounds shipment formula work and integer conversion.
 const MaxPackageQuantity uint64 = 1_000_000
 
-// Dimensions is an immutable rectangular package triple and package count.
+// Dimensions is a rectangular package triple and count retaining each side
+// in its original unit. Value operations are immutable and safe to share;
+// pointer JSON decoding needs exclusive ownership. Its zero value is not a
+// usable package. Formula methods do not orient/pack cargo or select tariffs.
 type Dimensions struct {
 	length   Quantity
 	width    Quantity
@@ -19,7 +22,10 @@ type Dimensions struct {
 	quantity uint64
 }
 
-// NewDimensions validates a positive rectangular triple and bounded count.
+// NewDimensions validates three positive length quantities (mixed length units
+// are allowed) and quantity in [1, MaxPackageQuantity]. Wrong dimensions match
+// ErrDimensionMismatch; nonpositive sides/counts match ErrInvalidQuantity. No
+// side is converted or rounded. It returns no partial triple on failure.
 func NewDimensions(length, width, height Quantity, quantity uint64) (Dimensions, error) {
 	for name, value := range map[string]Quantity{
 		"length": length,
@@ -63,7 +69,9 @@ func (d Dimensions) FloorArea(target Unit, conversion ConversionContext) (Quanti
 }
 
 // FloorAreaContext returns length multiplied by width in target under caller
-// cancellation.
+// cancellation. Target must be an area unit. This is one package's footprint,
+// not multiplied by the package count. Conversion policy applies to operand
+// conversions and then the result; it is not a single formula-wide rounding.
 func (d Dimensions) FloorAreaContext(
 	ctx context.Context,
 	target Unit,
@@ -87,7 +95,9 @@ func (d Dimensions) CubicVolume(target Unit, conversion ConversionContext) (Quan
 }
 
 // CubicVolumeContext returns length multiplied by width and height in target
-// under caller cancellation.
+// under caller cancellation. Target must be a volume unit. The result is per
+// package; use TotalVolumeContext to include count. The policy is applied at
+// individual conversion boundaries, not once across the entire formula.
 func (d Dimensions) CubicVolumeContext(
 	ctx context.Context,
 	target Unit,
@@ -115,7 +125,8 @@ func (d Dimensions) TotalVolume(target Unit, conversion ConversionContext) (Quan
 }
 
 // TotalVolumeContext multiplies one package's cubic volume by the package
-// count under caller cancellation.
+// count under caller cancellation. CubicVolumeContext converts to target before
+// the count is multiplied exactly; no final quantization is added after counting.
 func (d Dimensions) TotalVolumeContext(
 	ctx context.Context,
 	target Unit,
@@ -140,7 +151,8 @@ func (d Dimensions) TotalVolumeContext(
 	return Quantity{amount: amount, unit: target}, nil
 }
 
-// TruckWidth is a validated positive vehicle interior width.
+// TruckWidth is a validated positive vehicle interior width selected by the
+// caller, not a universal vehicle constant. Its zero value has no usable width.
 type TruckWidth struct{ width Quantity }
 
 // NewTruckWidth validates a positive length quantity.
@@ -163,10 +175,14 @@ func NewTruckWidth(width Quantity) (TruckWidth, error) {
 func (t TruckWidth) Quantity() Quantity { return t.width }
 
 // StackingFactor is the positive number of equivalent floor positions shared
-// by stacked packages. One means not stackable.
+// by stacked packages. One means not stackable. Positive fractional factors are
+// admitted; actual stackability remains caller policy. The zero value is invalid
+// and using it as a formula divisor returns a division-by-zero error.
 type StackingFactor struct{ factor decimal.Decimal }
 
-// NewStackingFactor validates a positive stacking divisor.
+// NewStackingFactor validates a positive stacking divisor under default decimal
+// limits. Nonpositive factors match ErrInvalidQuantity; limit errors also retain
+// the go-math cause. The factor is not restricted to integer counts.
 func NewStackingFactor(factor decimal.Decimal) (StackingFactor, error) {
 	if err := validateAmount(factor); err != nil {
 		return StackingFactor{}, err
@@ -192,7 +208,12 @@ func (d Dimensions) LoadingMetres(
 	return d.LoadingMetresContext(context.Background(), truckWidth, stacking, conversion)
 }
 
-// LoadingMetresContext calculates loading metres under caller cancellation.
+// LoadingMetresContext calculates (length * width / truck width / stacking)
+// times package quantity in LoadingMetre under caller cancellation. It ignores
+// height and uses explicitly constructed positive formula inputs. Rounded policy
+// applies separately to conversions and divisions; it does not guarantee one
+// final rounding for the entire formula. Carrier rounding and orientation are
+// caller policy (MEASUREMENT-DEC-006, carrier snapshots 2026-08-30).
 func (d Dimensions) LoadingMetresContext(
 	ctx context.Context,
 	truckWidth TruckWidth,
@@ -231,13 +252,17 @@ func (d Dimensions) LoadingMetresContext(
 }
 
 // VolumetricDivisor is a positive volume-per-kilogram carrier input with an
-// explicit volume unit, for example 5000 cm3/kg.
+// explicit volume unit, for example 5000 cm3/kg. No carrier or effective date is
+// inferred. Its zero value has no usable volume unit.
 type VolumetricDivisor struct {
 	volumePerKilogram decimal.Decimal
 	volumeUnit        Unit
 }
 
-// NewVolumetricDivisor validates a positive volume-per-kilogram divisor.
+// NewVolumetricDivisor validates a positive volume-per-kilogram divisor under
+// default decimal limits. volumeUnit must identify a supported volume unit,
+// otherwise ErrUnknownUnit or ErrDimensionMismatch is returned; positivity and
+// decimal admission failures match ErrInvalidQuantity.
 func NewVolumetricDivisor(volumePerKilogram decimal.Decimal, volumeUnit Unit) (VolumetricDivisor, error) {
 	dimension, err := volumeUnit.Dimension()
 	if err != nil {
@@ -269,7 +294,9 @@ func (d VolumetricDivisor) Weight(volume Quantity, conversion ConversionContext)
 }
 
 // WeightContext calculates dimensional weight in kilograms under caller
-// cancellation.
+// cancellation. Volume is converted to the divisor's explicit volume unit and
+// then divided, each using conversion. No positivity check is applied to volume,
+// so signed/zero input yields arithmetic signed/zero output, not tariff policy.
 func (d VolumetricDivisor) WeightContext(
 	ctx context.Context,
 	volume Quantity,
@@ -298,7 +325,8 @@ func (d VolumetricDivisor) WeightContext(
 }
 
 // VolumetricIndex is a positive mass-per-volume factor, usually expressed as
-// kilograms per cubic metre.
+// kilograms per cubic metre. The factor belongs to the caller's tariff policy;
+// its zero value has no usable density quantity.
 type VolumetricIndex struct{ density Quantity }
 
 // NewVolumetricIndex validates a positive density quantity.
@@ -327,7 +355,9 @@ func (i VolumetricIndex) Weight(volume Quantity, conversion ConversionContext) (
 }
 
 // WeightContext multiplies the index by a volume and returns canonical
-// kilograms under caller cancellation.
+// kilograms under caller cancellation. Volume must have the volume dimension,
+// but signed/zero volume is accepted. Canonical operand conversion and arithmetic
+// follow conversion independently; this does not select billable/actual weight.
 func (i VolumetricIndex) WeightContext(
 	ctx context.Context,
 	volume Quantity,

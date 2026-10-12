@@ -455,6 +455,9 @@ func zeroQuantity(call func(context.Context) (measurement.Quantity, error)) func
 	}
 }
 
+// cancelAfterErrChecks injects cancellation at a deterministic Err probe so
+// composed-stage propagation is tested without scheduler timing. Unlike a real
+// cancellation context it does not close Done; the test models Err observation.
 type cancelAfterErrChecks struct {
 	mu        sync.Mutex
 	remaining int

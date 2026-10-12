@@ -10,15 +10,25 @@ type Dimension uint8
 const (
 	// Dimensionless identifies ratios and counts with unit one.
 	Dimensionless Dimension = iota
+	// LengthDimension identifies ordinary lengths, distinct from loading metres.
 	LengthDimension
+	// AreaDimension identifies squared length.
 	AreaDimension
+	// VolumeDimension identifies cubed length.
 	VolumeDimension
+	// MassDimension identifies mass, not gravitational force.
 	MassDimension
+	// TemperatureDimension identifies absolute temperatures, not intervals.
 	TemperatureDimension
+	// DensityDimension identifies mass per volume.
 	DensityDimension
+	// LoadingMetreDimension identifies occupied loading-floor length and
+	// does not participate in general derived-dimensional arithmetic.
 	LoadingMetreDimension
 )
 
+// String returns the stable dimension name, or Dimension(n) for an unsupported
+// identity. The zero Dimension is Dimensionless, not an invalid sentinel.
 func (d Dimension) String() string {
 	names := [...]string{
 		"dimensionless",
@@ -37,6 +47,9 @@ func (d Dimension) String() string {
 	return fmt.Sprintf("Dimension(%d)", d)
 }
 
+// The closed arithmetic table is package policy (MEASUREMENT-DEC-004), not
+// general symbolic algebra. Reject new result dimensions rather than inferring
+// a unit; loading metres are deliberately excluded even from scalar identity.
 func (d Dimension) multiply(other Dimension) (Dimension, error) {
 	switch d { //nolint:exhaustive // omitted dimensions fall through to rejection
 	case Dimensionless:

@@ -48,7 +48,12 @@ func (q Quantity) MarshalJSON() ([]byte, error) {
 	return json.Marshal(encodedQuantity{Value: q.amount.String(), Unit: q.unit})
 }
 
-// UnmarshalJSON decodes one bounded strict quantity object.
+// UnmarshalJSON decodes one quantity object within MaxSerializedBytes, rejecting
+// duplicate/unknown fields, trailing values, numeric amounts and invalid units
+// or decimals. Nil receivers match ErrInvalidQuantity. It replaces q only on
+// complete success and retains no data buffer. Returned JSON diagnostics are
+// redacted, but encoding/json may fail before calling this method; those outer
+// errors remain caller-owned. Use errors.Is for classification.
 func (q *Quantity) UnmarshalJSON(data []byte) error {
 	if q == nil {
 		return ErrInvalidQuantity
@@ -64,7 +69,10 @@ func (q *Quantity) UnmarshalJSON(data []byte) error {
 	return q.decode(encoded)
 }
 
-// MarshalXML encodes value and unit metadata without numeric narrowing.
+// MarshalXML encodes value and unit metadata without numeric narrowing. Encoder
+// must be non-nil; its I/O and lifecycle belong to the caller. Empty/default
+// start names become quantity; custom names are honored but cannot be read by
+// ParseQuantityXML, which requires the canonical root.
 func (q Quantity) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
 	if _, err := definitionFor(q.unit); err != nil {
 		return err
@@ -92,7 +100,9 @@ func (q Quantity) MarshalText() ([]byte, error) {
 	return []byte(q.String()), nil
 }
 
-// UnmarshalText parses canonical text with SymbolProfile.
+// UnmarshalText parses canonical text with SymbolProfile. Nil receivers match
+// ErrInvalidQuantity. Failure preserves q; successful replacement retains no
+// text buffer. It does not accept caller-specific profile aliases.
 func (q *Quantity) UnmarshalText(text []byte) error {
 	if q == nil {
 		return ErrInvalidQuantity
@@ -117,7 +127,11 @@ func (q Quantity) Value() (driver.Value, error) {
 	return string(data), nil
 }
 
-// Scan reads lossless JSON text from a SQL driver.
+// Scan reads lossless JSON text from a SQL driver. Only string/[]byte input is
+// accepted; SQL NULL and other types match ErrInvalidQuantity. Byte lengths are
+// checked against MaxSerializedBytes before copying; the driver's materialization
+// cost is outside this boundary. Nil receivers fail through UnmarshalJSON; every
+// error preserves q and successful decoding retains no input buffer.
 func (q *Quantity) Scan(source any) error {
 	var data []byte
 	switch value := source.(type) {
@@ -141,11 +155,17 @@ func (q *Quantity) Scan(source any) error {
 // FormatOptions contains every conversion and display decision. No locale or
 // preferred unit is inferred.
 type FormatOptions struct {
-	Unit       Unit
+	// Unit is the required supported target symbol, not an inferred preference.
+	Unit Unit
+	// Conversion selects unit-conversion arithmetic before display quantization.
 	Conversion ConversionContext
-	Scale      int32
-	Rounding   decimal.RoundingMode
-	Separator  string
+	// Scale is the display quantization scale; negative values round to powers of ten.
+	Scale int32
+	// Rounding is the explicit display mode, independent of conversion rounding.
+	Rounding decimal.RoundingMode
+	// Separator is inserted literally; it must be valid UTF-8 of at most 16 bytes
+	// without carriage return, newline or NUL. Empty text is accepted.
+	Separator string
 }
 
 // Format converts, rounds, and formats a quantity without caller cancellation.
@@ -154,7 +174,12 @@ func (q Quantity) Format(options FormatOptions) (string, error) {
 }
 
 // FormatContext converts, rounds, and formats a quantity under caller
-// cancellation and explicit options.
+// cancellation and explicit options. It first performs the chosen unit
+// conversion and then independently quantizes for display, so two rounding
+// boundaries can occur. Invalid formatting options match ErrInvalidQuantity;
+// conversion/quantization errors retain their classifications. Failure returns
+// empty text and leaves q unchanged. Output is not canonical parser input when
+// Separator differs from a single space.
 func (q Quantity) FormatContext(ctx context.Context, options FormatOptions) (string, error) {
 	if err := validateOperationContext(ctx); err != nil {
 		return "", err
@@ -202,18 +227,25 @@ func requireJSONEOF(decoder *json.Decoder) error {
 	return invalidJSONError(err)
 }
 
+// redactedJSONError preserves errors.Is identity without exposing the raw cause
+// through Unwrap. Only sanitized type-error metadata is offered through As;
+// the original syntax/value diagnostic may contain caller-controlled content.
 type redactedJSONError struct {
 	cause error
 }
 
+// Error renders a fixed classification without the original JSON diagnostic.
 func (e redactedJSONError) Error() string {
 	return "invalid JSON value"
 }
 
+// Is retains cause sentinel identity without exposing it through Unwrap.
 func (e redactedJSONError) Is(target error) bool {
 	return errors.Is(e.cause, target)
 }
 
+// As returns a sanitized copy only for json.UnmarshalTypeError; original
+// syntax errors and unsupported typed causes are deliberately not forwarded.
 func (e redactedJSONError) As(target any) bool {
 	result, ok := target.(**json.UnmarshalTypeError)
 	if !ok {
@@ -234,6 +266,9 @@ func invalidJSONError(cause error) error {
 	return fmt.Errorf("%w: %w", ErrInvalidQuantity, redactedJSONError{cause: cause})
 }
 
+// Preflight closed field names and duplicates before encoding/json can accept
+// a later value or expose an unknown field in diagnostics. The caller has already
+// admitted document bytes; nested quantities perform their own schema checks.
 func decodeJSONObject(data []byte, allowed map[string]struct{}, target any) error {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	token, err := decoder.Token()
@@ -276,7 +311,14 @@ func decodeJSONObject(data []byte, allowed map[string]struct{}, target any) erro
 	return nil
 }
 
-// ParseQuantityXML parses one strict, byte-bounded quantity XML document.
+// ParseQuantityXML parses one canonical quantity XML document within
+// MaxSerializedBytes, MaxXMLDepth and MaxXMLTokens. Scalar amounts/units obey
+// MaxTextBytes/MaxAliasBytes. Attributes, namespaces, references, comments,
+// directives, nested scalars and trailing documents are rejected. Only the
+// optional canonical XML 1.0 declaration is accepted. Nil/empty input is an error.
+// Syntax failures match ErrMalformedXML and ErrInvalidQuantity; value errors
+// preserve unit/dimension classification without echoing input. Data is not
+// retained; failure returns the zero Quantity. Bound transport reads upstream.
 func ParseQuantityXML(data []byte) (Quantity, error) {
 	decoder, start, budget, err := startXMLDocument(data, "quantity")
 	if err != nil {
@@ -429,7 +471,11 @@ func (d Dimensions) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// UnmarshalJSON decodes and validates a complete dimension triple.
+// UnmarshalJSON decodes and validates a complete dimension triple within
+// MaxSerializedBytes, with strict duplicate/unknown-field and trailing-value
+// checks. Each side retains its unit. Nil receivers match ErrInvalidQuantity;
+// every failure preserves d. Input buffers are not retained. The JSON redaction
+// boundary has the same outer-encoding/json caveat as Quantity.UnmarshalJSON.
 func (d *Dimensions) UnmarshalJSON(data []byte) error {
 	if d == nil {
 		return ErrInvalidQuantity
@@ -451,7 +497,9 @@ func (d *Dimensions) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalXML encodes every side's value and unit plus package quantity.
+// MarshalXML encodes every side's value and unit plus package quantity. Encoder
+// must be non-nil and is caller-owned. Empty/default start names become dimensions;
+// other roots are honored but are not accepted by ParseDimensionsXML.
 func (d Dimensions) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
 	if _, err := NewDimensions(d.length, d.width, d.height, d.quantity); err != nil {
 		return err
@@ -472,7 +520,12 @@ func (d *Dimensions) UnmarshalXML(_ *xml.Decoder, _ xml.StartElement) error {
 	return fmt.Errorf("%w: %w", ErrInvalidQuantity, ErrUnboundedXML)
 }
 
-// ParseDimensionsXML parses one strict, byte-bounded dimensions XML document.
+// ParseDimensionsXML parses a canonical dimensions document under the same
+// byte/token/depth and restricted XML policy as ParseQuantityXML. It validates
+// positive length sides and bounded count, preserving original unit metadata.
+// Syntax failures match ErrMalformedXML and ErrInvalidQuantity; value failures
+// preserve unit/dimension classification. Input is not retained and failure
+// returns the zero Dimensions. It performs no transport I/O.
 func ParseDimensionsXML(data []byte) (Dimensions, error) {
 	decoder, start, budget, err := startXMLDocument(data, "dimensions")
 	if err != nil {
