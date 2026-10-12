@@ -162,3 +162,10 @@ No broad runtime tests, race/fuzz/mutation/benchmark campaign, online source
 monitoring, public consumer or release qualification was selected for this Tier A
 batch. This source/documentation evidence does not certify remote main or hosted
 CI; the coordinator owns delivery and shared persistent tooling enforcement.
+
+## Objective enforcement adoption
+
+The local `source-docs-check` target is required by ordinary/full checks and CI.
+Shared CI uses `source_documentation: check` with the immutable Tools v2.4.0
+workflow and matching authenticated binary/checksum declaration. Structural
+checks do not replace this maintained semantic audit or native docs/examples.
