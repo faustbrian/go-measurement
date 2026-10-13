@@ -1,5 +1,7 @@
 # Logistics Formulas
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 For a rectangular package with length `l`, width `w`, height `h`, quantity `q`,
 truck interior width `tw`, and stacking factor `s`:
 
@@ -27,3 +29,6 @@ dimensions up to a carrier increment, select the greater of actual and
 dimensional weight, or round the final chargeable weight. Apply those
 carrier- and contract-specific rules before or after these raw formulas with
 an explicit rounding policy.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

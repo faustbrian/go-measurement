@@ -1,5 +1,7 @@
 # Source documentation audit
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## Scope and plan
 
 Baseline: `d16d64970497863ce1c07d9b63f4c38d2d884f8d` (main).
@@ -169,3 +171,6 @@ The local `source-docs-check` target is required by ordinary/full checks and CI.
 Shared CI uses `source_documentation: check` with the immutable Tools v2.4.0
 workflow and matching authenticated binary/checksum declaration. Structural
 checks do not replace this maintained semantic audit or native docs/examples.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

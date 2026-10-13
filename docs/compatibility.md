@@ -1,5 +1,7 @@
 # Compatibility
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 The minimum supported Go version is 1.27.0. Public API compatibility follows
 semantic versioning. Incompatible changes are recorded in
 the changelog and API baseline.
@@ -40,3 +42,6 @@ The former `measurementwire` path is a deprecated delegation-only facade that
 retains its named `Options` type and function signatures. It is first eligible
 for removal in a future major release and never before 2027-03-08. `money` owns monetary values
 and `geo` owns earth-coordinate distance semantics.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

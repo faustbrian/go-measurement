@@ -1,5 +1,7 @@
 # Performance
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 Cost is dominated by arbitrary-precision coefficient alignment,
 multiplication, and division. Finite SI conversions allocate proportionally to
 decimal size. Non-terminating rounded conversions perform one quantized
@@ -14,3 +16,6 @@ allocations for conversion and loading-metre paths. `make check-full` retains
 the configured benchmark campaign; ordinary local and PR checks do not run it.
 Benchmarks are regression signals, not cross-machine service-level guarantees.
 No hidden cache trades memory for speed.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

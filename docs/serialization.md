@@ -1,5 +1,7 @@
 # Serialization And Adapters
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 Quantity JSON is an object with decimal text and unit metadata:
 
 ```json
@@ -36,3 +38,6 @@ byte limit and routes XML through the core bounded parser. It supports only
 explicit JSON and XML formats. Apply a transport limit before constructing the
 input byte slice. The former `measurementwire` path delegates to this
 implementation and remains available for compatibility.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

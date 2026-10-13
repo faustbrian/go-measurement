@@ -1,5 +1,7 @@
 # Dimensional Analysis
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 V1 uses a closed dimension set instead of symbolic algebra. Addition,
 subtraction, comparison, and clamping require identical dimensions. Multiplying
 length by length produces area; area by length produces volume; density by
@@ -15,3 +17,6 @@ Absolute temperatures are affine values. They can be converted and compared,
 but adding or subtracting them returns `ErrAffineArithmetic`; temperature
 intervals require a future distinct dimension. Loading metre is a semantic
 logistics dimension and is not interchangeable with length.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

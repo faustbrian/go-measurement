@@ -1,5 +1,7 @@
 # Troubleshooting
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 `ErrUnknownUnit` means the unit is unsupported or absent from the selected
 profile. `ErrDimensionMismatch` means operands or formula inputs have different
 dimensions. `ErrUnsupportedDimension` means multiplication or division would
@@ -14,3 +16,6 @@ limits, or an out-of-range scale was supplied.
 temperatures. Model the intended interval outside this package. Serialization errors
 usually indicate numeric JSON, unknown fields, a missing unit, malformed
 decimal text, trailing content, or a configured byte limit.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

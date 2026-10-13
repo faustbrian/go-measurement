@@ -1,5 +1,7 @@
 # FAQ
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## Why not float64?
 
 Carrier dimensions and divisors cross persistence and billing-adjacent
@@ -30,3 +32,6 @@ package contains formulas, not tariffs or packaging recommendations.
 
 Build a locale-specific `Profile` and pass it to `Parse`. Formatting emits the
 explicit unit symbol; localized display belongs in the presentation layer.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

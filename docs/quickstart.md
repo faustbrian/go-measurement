@@ -1,5 +1,7 @@
 # Quickstart
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 Construct decimals with `math/decimal`, then attach a supported unit:
 
 ```go
@@ -27,3 +29,6 @@ and the other context-suffixed operations. Cancellation and an expired
 deadline are returned before invalid units, quantities, conversion policy, or
 format options are inspected. `ConversionContext` is a separate immutable
 arithmetic policy; it never stores a request context.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

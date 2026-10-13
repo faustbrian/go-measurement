@@ -1,5 +1,7 @@
 # Standards And Formula Sources
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 The unit catalog was re-audited on 2026-08-30 against these primary sources:
 
 - The [BIPM SI Brochure, ninth edition, version 4.01 (2026)](https://www.bipm.org/en/publications/si-brochure/)
@@ -75,3 +77,6 @@ The FedEx URL returned a service-unavailable page, so its historical example
 remains executable arithmetic evidence but is not claimed as current pinned
 provider agreement. No maintained software unit-library differential is run;
 that lane is explicitly recorded as not assessed.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

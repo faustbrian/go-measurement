@@ -1,5 +1,7 @@
 # Cookbook
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## Carrier dimensions
 
 Construct each side in the payload's declared unit and pass the package count
@@ -23,3 +25,6 @@ dates outside this package.
 Use `FormatOptions` to name target unit, conversion rounding, final display
 scale, display rounding, and separator. Do not parse localized display text
 with `SymbolProfile`; supply an explicit locale-owned alias profile.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

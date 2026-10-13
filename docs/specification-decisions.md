@@ -1,5 +1,7 @@
 # Specification decisions
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 This register records the source-backed choices that define observable measurement behavior. The machine-readable authority is [`specification/decisions.json`](../specification/decisions.json); evidence bindings are in [`specification/conformance.json`](../specification/conformance.json). An empty differential lane means no maintained software peer was assessed, not that agreement was proved.
 
 ## MEASUREMENT-DEC-001: Exact unit catalog and accepted SI units
@@ -149,3 +151,6 @@ This register records the source-backed choices that define observable measureme
 - **Reconsider when:** A carrier policy is embedded, formula inputs become implicit, or any cited provider changes the checked examples.
 - Additional authoritative source: `{"id":"dbschenker-logistics-source","version":"DB Schenker international road terms effective 2026-05-04","url":"https://www.dbschenker.com/resource/blob/2479672/3b7520da0b6a5db3138cbd14b70f3320/terms-of-provision-of-services-in-international-road-forwarding-from-4-05-2026-data.pdf","specifications":["Carrier logistics references snapshot 2026-08-30"]}`
 - Additional authoritative source: `{"id":"dhl-logistics-source","version":"DHL DCT help snapshot 2026-08-30","url":"https://dct.dhl.com/help","specifications":["Carrier logistics references snapshot 2026-08-30"]}`
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

@@ -1,5 +1,7 @@
 # Exactness And Rounding
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 All amounts and constants are `math/decimal.Decimal`. No package operation
 converts through `float32` or `float64`. SI prefixes and international inch,
 foot, yard, pound, and ounce definitions are finite decimal ratios. Fahrenheit
@@ -29,3 +31,6 @@ observing cancellation. The v1 methods without a `Context` suffix delegate with
 Arithmetic uses `math` limits. `WithLimits` can apply tighter bounds. Invalid
 limits, oversized exponents, coefficients, inputs, counts, and outputs fail
 before unbounded work.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

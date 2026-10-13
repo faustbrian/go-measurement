@@ -1,5 +1,7 @@
 # API And Supported Units
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 `Quantity` owns a `decimal.Decimal` amount and `Unit`. `New` validates unit
 identity; accessors return immutable values. `Convert`, `Add`, `Subtract`,
 `Compare`, `Equal`, `Multiply`, `Divide`, `Round`, `Clamp`, `Times`, and
@@ -74,3 +76,6 @@ compatibility facade. Its named `Options` type keeps the legacy package's
 reflection identity. New callers should use `adapters/wire`; the earliest
 permitted removal of the legacy path is a future major release and never before
 2027-03-08.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

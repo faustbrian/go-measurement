@@ -1,5 +1,7 @@
 # Migration From shipit/measurements
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 Inventory every legacy numeric field together with its implicit unit before
 changing types. Replace floats or bare decimals with `Quantity` at service
 boundaries, using the payload's declared unit. Replace implicit conversions
@@ -110,3 +112,6 @@ The standard library can reject malformed JSON before calling a type's
 `UnmarshalJSON` method. When accepting untrusted bytes, call the bounded
 `Quantity.UnmarshalJSON` or `adapters/wire.Decode` entrypoint directly and
 apply a transport limit before materializing the payload.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

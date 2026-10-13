@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/faustbrian/go-measurement/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-measurement/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-measurement/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
-[![Mutation](https://img.shields.io/badge/mutation-optional_local_or_full-blue)](CONTRIBUTING.md#verification)
+[![Coverage](https://img.shields.io/badge/coverage-risk_selected-blue)](CONTRIBUTING.md#verification)
+[![Mutation](https://img.shields.io/badge/mutation-optional_local%2Fselected_scheduled-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-measurement/v3.svg)](https://pkg.go.dev/github.com/faustbrian/go-measurement/v3)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-measurement?sort=semver)](https://github.com/faustbrian/go-measurement/releases)
@@ -74,3 +74,12 @@ assertion. Base-free Make checks run deterministic seeds/corpora; `make ci`
 checks the specification register offline. `make check-full` retains explicit
 online validation and full canonical-unit, carrier-fixture and fuzz assurance.
 See [CHANGELOG.md](CHANGELOG.md) for release history.
+
+## Documentation navigation
+
+[Complete documentation map](docs/README.md#complete-documentation-map) · [Current source package map](docs/package-map.md)
+
+Use the [versioned ecosystem entry](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md) for package
+selection. The [frozen compatibility cohort](https://github.com/faustbrian/go-library-tools/blob/v1.8.4/docs/ecosystem/compatibility-sets.md)
+is separate from current package releases and unpublished source changes.
+Adopting them does not silently update that cohort.
