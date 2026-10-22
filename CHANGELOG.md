@@ -11,6 +11,12 @@ versioning.
   ownership, mutable decoder guarantees and bounded wire error semantics;
   preserve runtime behavior and the deprecated facade's identity.
 
+## 3.0.2 - 2026-10-22
+
+### Changed
+
+- Publish the current source and documentation with a fresh immutable tag.
+
 ## 3.0.1 - 2026-10-07
 
 This entry describes the v3.0.1 release source. Adoption requires the public
